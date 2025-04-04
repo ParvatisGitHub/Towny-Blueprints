@@ -1,0 +1,16 @@
+# Quarry Upkeep Template
+name: "Quarry Upkeep"
+description: "Upkeep template for quarries requiring both tools and money"
+random_selection: false # We want all resources to be required
+
+resources:
+  tool:
+    type: "TOOL"
+    tool_type: "PICKAXE"
+    durability_drain: 10
+    weight: 1.0
+  money:
+    type: "MONEY"
+    min_amount: 50
+    max_amount: 50
+    weight: 1.0

@@ -1,0 +1,40 @@
+# Default blueprints configuration
+
+blueprints:
+  farm:
+    name: "Basic Farm"
+    description: "A simple crop farm blueprint"
+    size:
+      x: 9
+      y: 4
+      z: 9
+    required_blocks:
+      DIRT: 81
+      WATER: 1
+      FENCE: 32
+      FENCE_GATE: 1
+    daily_income: 50
+    income_type: MONEY
+    daily_upkeep: 10
+    upkeep_type: MONEY
+    placement_cost: 500
+    permission_node: "townyblueprints.blueprint.farm"
+
+  mine:
+    name: "Basic Mine"
+    description: "A simple mining operation blueprint"
+    size:
+      x: 7
+      y: 8
+      z: 7
+    required_blocks:
+      STONE: 64
+      TORCH: 8
+      CHEST: 2
+      LADDER: 8
+    daily_income: 5
+    income_type: DIAMOND
+    daily_upkeep: 20
+    upkeep_type: MONEY
+    placement_cost: 1000
+    permission_node: "townyblueprints.blueprint.mine"

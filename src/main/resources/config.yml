@@ -1,0 +1,129 @@
+# TownyBlueprints Configuration
+
+# Economy settings
+economy:
+  nation_tax:
+    # Whether to use Towny's nation tax rate for resource collection
+    use_towny_tax: true
+    # Whether to allow different rates for different resource types
+    allow_per_resource_rates: true
+    # Default rate if Towny's tax rate is not available
+    default_rate: 10
+  
+  # Minimum and maximum values for blueprint costs
+  min_placement_cost: 0
+  max_placement_cost: 1000000
+  
+  # Resource collection settings
+  collection:
+    # Cooldown in minutes between collections
+    cooldown: 60
+    # Maximum resources that can accumulate
+    max_storage: 1000
+
+  # Refund settings for blueprint removal
+  refund:
+    enabled: true
+    percentage: 75
+
+  # Upgrade settings
+  upgrades:
+    # Whether to refund resources when upgrading
+    refund_on_upgrade: true
+    # Percentage of original cost to refund when upgrading
+    upgrade_refund_percentage: 50
+
+  # Nation tax settings
+  nation_tax:
+    # Whether to enable nation taxation of resource collection
+    enabled: true
+    # Default tax rate (percentage)
+    default_rate: 10
+    # Minimum tax rate allowed
+    min_rate: 0
+    # Maximum tax rate allowed
+    max_rate: 25
+    # Whether to allow different rates for different resource types
+    allow_per_resource_rates: true
+    # Default rates for specific resource types (if allow_per_resource_rates is true)
+    resource_rates:
+      MONEY: 10
+      ITEMS: 15
+      BONUS: 0
+
+# Blueprint settings
+blueprints:
+  # Maximum dimensions for blueprints
+  max_size:
+    x: 32
+    y: 32
+    z: 32
+
+  # Minimum dimensions for blueprints
+  min_size:
+    x: 1
+    y: 1
+    z: 1
+
+  # Status check settings
+  status_check:
+    # Type of check: 'interval' (checks every X ticks) or 'periodic' (checks X blueprints per tick)
+    type: "interval"
+    # Interval between checks in ticks (20 ticks = 1 second) - only used if type is 'interval'
+    interval: 100
+    # Number of blueprints to check per tick - only used if type is 'periodic'
+    blueprints_per_tick: 5
+    # Whether to check only loaded chunks
+    only_loaded_chunks: true
+
+  # Blueprint type limits per town level
+  type_limits:
+    farm:
+      1: 2  # Level 1 towns can have 2 farms
+      2: 4  # Level 2 towns can have 4 farms
+      3: 6  # Level 3 towns can have 6 farms
+    mine:
+      1: 1  # Level 1 towns can have 1 mine
+      2: 2  # Level 2 towns can have 2 mines
+      3: 3  # Level 3 towns can have 3 mines
+    warehouse:
+      1: 1  # Level 1 towns can have 1 warehouse
+      2: 2  # Level 2 towns can have 2 warehouses
+      3: 3  # Level 3 towns can have 3 warehouses
+    government:
+      1: 1  # Level 1 towns can have 1 warehouse
+      2: 2  # Level 2 towns can have 2 warehouses
+      3: 3  # Level 3 towns can have 3 warehouses
+
+# Maximum number of blueprints allowed per town level
+# Use -1 for unlimited
+max_blueprints_per_level:
+  1: 3  # Level 1 towns can have 3 blueprints
+  2: 5  # Level 2 towns can have 5 blueprints
+  3: 8  # Level 3 towns can have 8 blueprints
+  4: 12 # Level 4 towns can have 12 blueprints
+  5: 15 # Level 5 towns can have 15 blueprints
+
+# Particle settings
+particles:
+  # Type of particle to use for blueprint visualization
+  type: COMPOSTER
+  # Number of particles to spawn per point
+  count: 1
+  # Particle spawn frequency in ticks (20 ticks = 1 second)
+  frequency: 10
+  # Spacing between particles (lower = more particles)
+  spacing: 0.5
+  # Maximum distance to render particles (in blocks)
+  view_distance: 50
+
+# Messages
+messages:
+  prefix: "&6[TownyBlueprints] &r"
+  no_permission: "&cYou don't have permission to do that!"
+  blueprint_placed: "&aBlueprint placed successfully!"
+  blueprint_cancelled: "&aBlueprint placement cancelled."
+  not_in_town: "&cYou must be in a town to do that!"
+  not_town_member: "&cYou must be a member of this town to do that!"
+  collection_cooldown: "&cYou must wait %time% minutes before collecting again!"
+  collection_success: "&aResources collected successfully!"

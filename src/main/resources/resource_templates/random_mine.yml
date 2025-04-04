@@ -1,0 +1,26 @@
+# Random Mine Resource Template
+name: "Random Mine"
+description: "A template that randomly gives one type of ore"
+random_selection: true # Will randomly select one resource type based on weights
+
+resources:
+  iron:
+    type: IRON_ORE
+    min_amount: 32
+    max_amount: 64
+    weight: 0.4
+  gold:
+    type: GOLD_ORE
+    min_amount: 16
+    max_amount: 32
+    weight: 0.3
+  diamond:
+    type: DIAMOND
+    min_amount: 1
+    max_amount: 3
+    weight: 0.1
+  coal:
+    type: COAL
+    min_amount: 32
+    max_amount: 64
+    weight: 0.2

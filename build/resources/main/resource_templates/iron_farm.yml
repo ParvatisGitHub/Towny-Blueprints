@@ -1,0 +1,16 @@
+# Iron Farm Resource Template
+name: "Iron Farm"
+description: "A template for iron farm resources"
+random_selection: false # Set to true to randomly select one resource type
+
+resources:
+  iron:
+    type: IRON_INGOT
+    min_amount: 32
+    max_amount: 64
+    weight: 1.0
+  stone:
+    type: STONE
+    min_amount: 16
+    max_amount: 32
+    weight: 1.0

@@ -1,0 +1,43 @@
+# Tool Definitions
+# This file defines which materials correspond to generic tool types
+
+definitions:
+  AXE:
+    - WOODEN_AXE
+    - STONE_AXE
+    - IRON_AXE
+    - GOLDEN_AXE
+    - DIAMOND_AXE
+    - NETHERITE_AXE
+    
+  PICKAXE:
+    - WOODEN_PICKAXE
+    - STONE_PICKAXE
+    - IRON_PICKAXE
+    - GOLDEN_PICKAXE
+    - DIAMOND_PICKAXE
+    - NETHERITE_PICKAXE
+    
+  SHOVEL:
+    - WOODEN_SHOVEL
+    - STONE_SHOVEL
+    - IRON_SHOVEL
+    - GOLDEN_SHOVEL
+    - DIAMOND_SHOVEL
+    - NETHERITE_SHOVEL
+    
+  HOE:
+    - WOODEN_HOE
+    - STONE_HOE
+    - IRON_HOE
+    - GOLDEN_HOE
+    - DIAMOND_HOE
+    - NETHERITE_HOE
+    
+  SWORD:
+    - WOODEN_SWORD
+    - STONE_SWORD
+    - IRON_SWORD
+    - GOLDEN_SWORD
+    - DIAMOND_SWORD
+    - NETHERITE_SWORD

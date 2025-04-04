@@ -1,0 +1,25 @@
+name: "Custom Items Farm"
+description: "A farm that produces custom items"
+random_selection: false
+
+resources:
+  mythic_sword:
+    type: "mythicmobs:LEGENDARY_SWORD"
+    min_amount: 1
+    max_amount: 1
+    weight: 1.0
+  custom_gem:
+    type: "itemsadder:gems:ruby"
+    min_amount: 1
+    max_amount: 3
+    weight: 1.0
+  mmo_staff:
+    type: "mmoitems:STAFF:APPRENTICE_STAFF"
+    min_amount: 1
+    max_amount: 1
+    weight: 1.0
+  oraxen_tool:
+    type: "oraxen:mystic_pickaxe"
+    min_amount: 1
+    max_amount: 1
+    weight: 1.0

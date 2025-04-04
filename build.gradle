@@ -1,0 +1,79 @@
+plugins {
+    id 'java'
+    id 'io.freefair.lombok' version '8.4'
+}
+
+group = 'com.townyblueprints'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.papermc.io/repository/maven-public/' }
+    maven { url 'https://repo.glaremasters.me/repository/towny/' }
+    maven { url 'https://repo.mythiccraft.io/releases' }
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://repo.codemc.io/repository/maven-releases/' }
+    maven { url = "https://mvnrepository.com/artifact/org.mockbukkit.mockbukkit/mockbukkit-v1.21" }
+    maven { url 'https://repo.oraxen.com/releases/' }    
+    maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+    maven { url 'https://ci.nyaacat.com/maven/' }
+    maven { url 'https://mvn.lumine.io/repository/maven-public/' }
+    maven { url 'https://nexus.phoenixdevt.fr/repository/maven-public/' }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
+    compileOnly 'com.palmergames.bukkit.towny:towny:0.101.1.0'
+    
+    // Add lombok
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    
+    // Adventure API
+    compileOnly 'net.kyori:adventure-api:4.14.0'
+    compileOnly 'net.kyori:adventure-text-minimessage:4.14.0'
+    
+    // Custom item plugins
+    compileOnly('com.github.LoneDev6:API-ItemsAdder:3.6.1') {
+        transitive = false
+    }
+    compileOnly('net.Indyuce:MMOItems-API:6.9.2-SNAPSHOT') {
+        transitive = false
+    }
+    compileOnly('io.lumine:Mythic-Dist:5.3.5') {
+        exclude group: 'io.lumine', module: 'MythicLib'
+    }
+    compileOnly('io.lumine:MythicLib-dist:1.4') {
+        transitive = false
+    }
+    compileOnly('io.th0rgal:oraxen:1.163.0:dev-all') {
+        transitive = false
+    }
+    compileOnly 'com.meowj:LangUtils:2.5-SNAPSHOT'
+    
+    // Test dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testImplementation 'org.mockito:mockito-core:5.3.1'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.3.1'
+    testImplementation platform('org.junit:junit-bom:5.10.1')
+    testImplementation 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
+    testImplementation 'com.palmergames.bukkit.towny:towny:0.101.1.0'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+}
