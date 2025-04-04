@@ -1,6 +1,13 @@
 package com.townyblueprints.managers;
 
+import com.palmergames.bukkit.towny.TownyMessaging;
+import com.palmergames.bukkit.towny.TownyUniverse;
+import com.palmergames.bukkit.towny.exceptions.TownyException;
+import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
+import com.palmergames.bukkit.towny.object.Translatable;
+import com.palmergames.bukkit.towny.permissions.PermissionNodes;
+import com.palmergames.util.MathUtil;
 import com.townyblueprints.TownyBlueprints;
 import com.townyblueprints.models.Blueprint;
 import com.townyblueprints.models.PlacedBlueprint;
@@ -8,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -18,12 +27,15 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.palmergames.bukkit.towny.command.BaseCommand.checkPermOrThrow;
+
 @RequiredArgsConstructor
 public class BlueprintManager {
     private final TownyBlueprints plugin;
     private final Map<String, Blueprint> blueprints = new HashMap<>();
     private final Map<String, PlacedBlueprint> placedBlueprints = new HashMap<>();
     private final Map<Town, Map<String, Integer>> pendingResources = new HashMap<>();
+    private final Map<String, Boolean> bonusBlockContributions = new HashMap<>();
 
     public void loadAll() {
         loadBlueprintsFromFolder(new File(plugin.getDataFolder(), "blueprints"));
@@ -319,6 +331,9 @@ public class BlueprintManager {
             placedBlueprint.setActive(bpSection.getBoolean("active", false));
             placedBlueprint.setLastCollectionTime(bpSection.getLong("last_collection", System.currentTimeMillis()));
 
+            // Load bonus block contribution state
+            bonusBlockContributions.put(id, bpSection.getBoolean("contributing_bonus_blocks", placedBlueprint.isActive()));
+
             placedBlueprints.put(id, placedBlueprint);
             plugin.getLogger().info("Loaded placed blueprint with ID: " + id);
         }
@@ -374,13 +389,27 @@ public class BlueprintManager {
     }
 
     public void removePlacedBlueprint(String id) {
-        if (placedBlueprints.containsKey(id)) {
+        PlacedBlueprint blueprint = placedBlueprints.get(id);
+        if (blueprint != null) {
+            // If the blueprint was active and contributing bonus blocks, update the town
+            if (blueprint.isActive() && bonusBlockContributions.getOrDefault(id, false)) {
+                Town town = blueprint.getTown();
+                int currentBonus = town.getBonusBlocks();
+                updateTownBonusBlocks(town, currentBonus);
+            }
+
+            bonusBlockContributions.remove(id);
             placedBlueprints.remove(id);
             saveAll();
             plugin.getLogger().info("Blueprint with ID " + id + " has been removed.");
         } else {
             plugin.getLogger().warning("No placed blueprint found with ID " + id);
         }
+    }
+
+    // Add this method to reset contribution tracking
+    public void resetBonusBlockTracking() {
+        bonusBlockContributions.clear();
     }
 
     public int calculateTownBonusBlocks(Town town) {
@@ -390,12 +419,31 @@ public class BlueprintManager {
                 .sum();
     }
 
-    public void updateTownBonusBlocks(Town town) {
-        int bonusBlocks = calculateTownBonusBlocks(town);
-        int currentBonus = town.getBonusBlocks();
+    public int calculateInactiveBonusBlocks(Town town) {
+        return getPlacedBlueprintsForTown(town).stream()
+                .filter(bp -> !bp.isActive() && bonusBlockContributions.getOrDefault(bp.getId(), false))
+                .mapToInt(bp -> bp.getBlueprint().getBonusTownBlocks())
+                .sum();
+    }
 
-        if (bonusBlocks != currentBonus) {
-            town.setBonusBlocks(bonusBlocks);
+    public void updateTownBonusBlocks(Town town, int currentBonusBlocks) {
+        int calculatedBonusBlocks = calculateTownBonusBlocks(town);
+        int inactiveBonusBlocks = calculateInactiveBonusBlocks(town);
+        int currentBonus = town.getBonusBlocks();
+        boolean hasChanges = false;
+        for (PlacedBlueprint blueprint : getPlacedBlueprintsForTown(town)) {
+            String blueprintId = blueprint.getId();
+            boolean isCurrentlyActive = blueprint.isActive();
+            boolean wasContributing = bonusBlockContributions.getOrDefault(blueprintId, false);
+
+            if (isCurrentlyActive != wasContributing) {
+                hasChanges = true;
+                bonusBlockContributions.put(blueprintId, isCurrentlyActive);
+            }
+        }
+
+        if (hasChanges) {
+            town.setBonusBlocks(town.getBonusBlocks() - inactiveBonusBlocks + calculatedBonusBlocks);  // Add calculated bonus
             try {
                 town.save();
             } catch (Exception e) {
@@ -440,6 +488,7 @@ public class BlueprintManager {
             bpSection.set("location.z", placed.getLocation().getZ());
             bpSection.set("active", placed.isActive());
             bpSection.set("last_collection", placed.getLastCollectionTime());
+            bpSection.set("contributing_bonus_blocks", bonusBlockContributions.getOrDefault(entry.getKey(), placed.isActive()));
         }
 
         ConfigurationSection resourcesSection = data.createSection("pending_resources");

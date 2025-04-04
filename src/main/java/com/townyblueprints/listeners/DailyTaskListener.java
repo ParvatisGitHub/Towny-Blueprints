@@ -48,6 +48,7 @@ public class DailyTaskListener implements Listener {
                     for (Map.Entry<UUID, List<PlacedBlueprint>> entry : townBlueprints.entrySet()) {
                         Map<String, Integer> totalUpkeep = new HashMap<>();
                         Map<String, Integer> toolUpkeep = new HashMap<>();
+                        Town town = entry.getValue().get(0).getTown();
 
                         for (PlacedBlueprint blueprint : entry.getValue()) {
                             try {
@@ -58,9 +59,12 @@ public class DailyTaskListener implements Listener {
                             }
                         }
 
+                        // Update town's bonus blocks
+                        int currentBonusBlocks = town.getBonusBlocks();
+                        plugin.getBlueprintManager().updateTownBonusBlocks(town, currentBonusBlocks);
+
                         // Send combined upkeep message for the town if there are any resources
                         if (!totalUpkeep.isEmpty() || !toolUpkeep.isEmpty()) {
-                            Town town = entry.getValue().get(0).getTown();
                             sendCombinedUpkeepMessage(town, totalUpkeep, toolUpkeep);
                         }
                     }
