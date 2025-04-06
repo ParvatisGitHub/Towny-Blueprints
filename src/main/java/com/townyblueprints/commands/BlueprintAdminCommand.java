@@ -54,6 +54,9 @@ public class BlueprintAdminCommand implements CommandExecutor, TabCompleter {
             case "gui":
                 plugin.getGuiManager().openAdminMenu(player);
                 break;
+            case "reload":
+                handleReload(player);
+                break;
             default:
                 sendHelp(player);
                 break;
@@ -68,30 +71,30 @@ public class BlueprintAdminCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleImport(Player player, String[] args) {
-    if (args.length < 2) {
-        player.sendMessage("§cUsage: /bpadmin import <filename>");
-        return;
-    }
+        if (args.length < 2) {
+            player.sendMessage("§cUsage: /bpadmin import <filename>");
+            return;
+        }
 
-    String filename = args[1];
-    if (!filename.endsWith(".yml")) {
-        filename += ".yml";
-    }
+        String filename = args[1];
+        if (!filename.endsWith(".yml")) {
+            filename += ".yml";
+        }
 
-    File blueprintsDir = new File(plugin.getDataFolder(), "blueprints");
-    if (!blueprintsDir.exists()) {
-        blueprintsDir.mkdirs();
-    }
+        File blueprintsDir = new File(plugin.getDataFolder(), "blueprints");
+        if (!blueprintsDir.exists()) {
+            blueprintsDir.mkdirs();
+        }
 
-    File file = new File(blueprintsDir, filename);
-    if (!file.exists()) {
-        player.sendMessage("§cFile not found: " + filename);
-        return;
-    }
+        File file = new File(blueprintsDir, filename);
+        if (!file.exists()) {
+            player.sendMessage("§cFile not found: " + filename);
+            return;
+        }
 
-    plugin.getBlueprintManager().importBlueprint(file);
-    player.sendMessage("§aBlueprint imported successfully!");
-}
+        plugin.getBlueprintManager().importBlueprint(file);
+        player.sendMessage("§aBlueprint imported successfully!");
+    }
 
     private void handleExport(Player player, String[] args) {
         if (args.length < 2) {
@@ -132,9 +135,9 @@ public class BlueprintAdminCommand implements CommandExecutor, TabCompleter {
 
     private void handleList(Player player) {
         List<String> blueprints = plugin.getBlueprintManager().getAllBlueprints()
-            .stream()
-            .map(bp -> bp.getName())
-            .collect(Collectors.toList());
+                .stream()
+                .map(bp -> bp.getName())
+                .collect(Collectors.toList());
 
         if (blueprints.isEmpty()) {
             player.sendMessage("§cNo blueprints found!");
@@ -147,6 +150,32 @@ public class BlueprintAdminCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleReload(Player player) {
+        try {
+            // Reload configuration
+            plugin.reloadConfig();
+            plugin.getConfigManager().loadConfig();
+
+            // Reload blueprints
+            plugin.getBlueprintManager().loadAll();
+
+            // Reload resource templates
+            plugin.getResourceTemplateManager().loadTemplates();
+
+            // Reload block and tool definitions
+            plugin.getBlockDefinitionManager().loadDefinitions();
+            plugin.getToolDefinitionManager().loadDefinitions();
+
+            // Reload warehouses
+            plugin.getWarehouseManager().loadWarehouses();
+
+            player.sendMessage("§aConfiguration and blueprints reloaded successfully!");
+        } catch (Exception e) {
+            player.sendMessage("§cError reloading configuration: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     private void sendHelp(Player player) {
         player.sendMessage("§6Blueprint Admin Commands:");
         player.sendMessage("§f/bpadmin §7- Open admin GUI");
@@ -156,6 +185,7 @@ public class BlueprintAdminCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§f/bpadmin delete <blueprint_name> §7- Delete a blueprint");
         player.sendMessage("§f/bpadmin list §7- List all blueprints");
         player.sendMessage("§f/bpadmin gui §7- Open admin GUI");
+        player.sendMessage("§f/bpadmin reload §7- Reload configuration and blueprints");
     }
 
     @Override
@@ -169,14 +199,15 @@ public class BlueprintAdminCommand implements CommandExecutor, TabCompleter {
             completions.add("delete");
             completions.add("list");
             completions.add("gui");
+            completions.add("reload");
         } else if (args.length == 2) {
             switch (args[0].toLowerCase()) {
                 case "export":
                 case "delete":
                     completions.addAll(plugin.getBlueprintManager().getAllBlueprints()
-                        .stream()
-                        .map(bp -> bp.getName())
-                        .collect(Collectors.toList()));
+                            .stream()
+                            .map(bp -> bp.getName())
+                            .collect(Collectors.toList()));
                     break;
                 case "import":
                     File[] files = plugin.getDataFolder().listFiles((dir, name) -> name.endsWith(".yml"));
@@ -190,7 +221,7 @@ public class BlueprintAdminCommand implements CommandExecutor, TabCompleter {
         }
 
         return completions.stream()
-            .filter(s -> s.toLowerCase().startsWith(args[args.length - 1].toLowerCase()))
-            .collect(Collectors.toList());
+                .filter(s -> s.toLowerCase().startsWith(args[args.length - 1].toLowerCase()))
+                .collect(Collectors.toList());
     }
 }
