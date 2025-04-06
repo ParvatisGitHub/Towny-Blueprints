@@ -10,6 +10,7 @@ public class Blueprint {
     private String name = "New Blueprint";
     private String description = "";
     private Map<String, Integer> requiredBlocks = new HashMap<>();
+    private Map<String, Integer> requiredMobs = new HashMap<>(); // New field for mob requirements
     private Material displayMaterial = Material.PAPER;
     private int sizeX = 1;
     private int sizeY = 1;
@@ -29,10 +30,10 @@ public class Blueprint {
     private String upgradesTo;
     private double upgradeCost = 0;
 
-    // New fields for grouped upkeep
-    private int requiredCount = 1; // Number of blueprints required for upkeep
-    private boolean sharedUpkeep = false; // Whether upkeep is shared between all blueprints of this type
-    private double upkeepMultiplier = 1.0; // Multiplier for upkeep when all required blueprints are present
+    // Fields for grouped upkeep
+    private int requiredCount = 1;
+    private boolean sharedUpkeep = false;
+    private double upkeepMultiplier = 1.0;
 
     /**
      * Gets the required blocks map where:
@@ -92,20 +93,74 @@ public class Blueprint {
     }
 
     /**
+     * Gets the required mobs map where:
+     * - Keys are entity type names (e.g., "VILLAGER", "COW")
+     * - Values are the required quantities
+     */
+    public Map<String, Integer> getRequiredMobs() {
+        return requiredMobs;
+    }
+
+    /**
+     * Sets the required mobs map
+     * @param mobs Map of entity types and their required quantities
+     */
+    public void setRequiredMobs(Map<String, Integer> mobs) {
+        this.requiredMobs = mobs != null ? new HashMap<>(mobs) : new HashMap<>();
+    }
+
+    /**
+     * Adds a required mob to the blueprint
+     * @param entityType Entity type name (e.g., "VILLAGER")
+     * @param amount Required quantity
+     */
+    public void addRequiredMob(String entityType, int amount) {
+        if (entityType != null && amount > 0) {
+            this.requiredMobs.put(entityType.toUpperCase(), amount);
+        }
+    }
+
+    /**
+     * Removes a required mob from the blueprint
+     * @param entityType Entity type name
+     */
+    public void removeRequiredMob(String entityType) {
+        if (entityType != null) {
+            this.requiredMobs.remove(entityType.toUpperCase());
+        }
+    }
+
+    /**
+     * Gets the required quantity for a specific mob type
+     * @param entityType Entity type name
+     * @return Required quantity or 0 if not required
+     */
+    public int getRequiredMobAmount(String entityType) {
+        return entityType != null ? this.requiredMobs.getOrDefault(entityType.toUpperCase(), 0) : 0;
+    }
+
+    /**
+     * Checks if a specific mob type is required
+     * @param entityType Entity type name
+     * @return true if the mob type is required
+     */
+    public boolean requiresMob(String entityType) {
+        return entityType != null && this.requiredMobs.containsKey(entityType.toUpperCase());
+    }
+
+    /**
      * Calculates the actual upkeep cost based on the number of blueprints present
      * @param currentCount Current number of blueprints of this type
      * @return The actual upkeep cost
      */
     public double calculateUpkeep(int currentCount) {
         if (currentCount < requiredCount) {
-            return dailyUpkeep; // Full upkeep cost when not enough blueprints
+            return dailyUpkeep;
         }
 
         if (sharedUpkeep) {
-            // Shared upkeep means the total cost is split between all blueprints
             return (dailyUpkeep * upkeepMultiplier) / currentCount;
         } else {
-            // Individual upkeep with bonus for having enough blueprints
             return dailyUpkeep * upkeepMultiplier;
         }
     }
@@ -117,14 +172,12 @@ public class Blueprint {
      */
     public double calculateIncome(int currentCount) {
         if (currentCount < requiredCount) {
-            return 0; // No income if not enough blueprints
+            return 0;
         }
 
         if (sharedUpkeep) {
-            // Shared income means the total income is split between all blueprints
             return (dailyIncome * upkeepMultiplier) / currentCount;
         } else {
-            // Individual income with bonus for having enough blueprints
             return dailyIncome * upkeepMultiplier;
         }
     }

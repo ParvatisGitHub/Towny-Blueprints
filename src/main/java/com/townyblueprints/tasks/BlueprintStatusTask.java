@@ -6,12 +6,14 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
+import org.bukkit.util.BoundingBox;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -76,14 +78,22 @@ public class BlueprintStatusTask extends BukkitRunnable {
 
         Map<String, Integer> requiredBlocks = blueprint.getBlueprint().getRequiredBlocks();
         Map<String, Integer> foundBlocks = new HashMap<>();
+        Map<String, Integer> requiredMobs = blueprint.getBlueprint().getRequiredMobs();
+        Map<String, Integer> foundMobs = new HashMap<>();
 
         // Initialize counters for block definitions
         for (String key : requiredBlocks.keySet()) {
             foundBlocks.put(key, 0);
         }
 
+        // Initialize counters for mob types
+        for (String key : requiredMobs.keySet()) {
+            foundMobs.put(key, 0);
+        }
+
         // Debug logging
         plugin.getLogger().info("[BlueprintStatusTask] Required blocks: " + requiredBlocks);
+        plugin.getLogger().info("[BlueprintStatusTask] Required mobs: " + requiredMobs);
 
         // Scan the area for required blocks
         for (int x = 0; x < blueprint.getBlueprint().getSizeX(); x++) {
@@ -106,7 +116,7 @@ public class BlueprintStatusTask extends BukkitRunnable {
                             List<Material> validMaterials = plugin.getBlockDefinitionManager().getDefinition(key);
                             if (validMaterials.contains(blockType)) {
                                 foundBlocks.merge(key, 1, Integer::sum);
-                                break; // Break once we've counted this block
+                                break;
                             }
                         } else {
                             // Try direct material match
@@ -114,10 +124,9 @@ public class BlueprintStatusTask extends BukkitRunnable {
                                 Material requiredMaterial = Material.valueOf(key);
                                 if (blockType == requiredMaterial) {
                                     foundBlocks.merge(key, 1, Integer::sum);
-                                    break; // Break once we've counted this block
+                                    break;
                                 }
                             } catch (IllegalArgumentException e) {
-                                // Invalid material name, skip it
                                 plugin.getLogger().warning("Invalid material name in blueprint: " + key);
                             }
                         }
@@ -126,24 +135,53 @@ public class BlueprintStatusTask extends BukkitRunnable {
             }
         }
 
+        // Check for required mobs in the area
+        if (!requiredMobs.isEmpty()) {
+            // Create a bounding box for the blueprint area
+            BoundingBox box = new BoundingBox(
+                    loc.getX(), loc.getY(), loc.getZ(),
+                    loc.getX() + blueprint.getBlueprint().getSizeX(),
+                    loc.getY() + blueprint.getBlueprint().getSizeY(),
+                    loc.getZ() + blueprint.getBlueprint().getSizeZ()
+            );
+
+            // Get all entities in the chunks that intersect with the blueprint
+            for (Entity entity : world.getNearbyEntities(box)) {
+                String entityType = entity.getType().name();
+                if (requiredMobs.containsKey(entityType)) {
+                    foundMobs.merge(entityType, 1, Integer::sum);
+                }
+            }
+        }
+
         // Debug logging
         plugin.getLogger().info("[BlueprintStatusTask] Found blocks: " + foundBlocks);
+        plugin.getLogger().info("[BlueprintStatusTask] Found mobs: " + foundMobs);
 
-        // Check if all required blocks are present
-        boolean hasAllBlocks = requiredBlocks.entrySet().stream()
+        // Check if all required blocks and mobs are present
+        boolean hasAllRequirements = requiredBlocks.entrySet().stream()
                 .allMatch(entry -> {
                     String key = entry.getKey();
                     Integer required = entry.getValue();
                     Integer found = foundBlocks.get(key);
 
                     boolean matches = found != null && found >= required;
-                    plugin.getLogger().info("[BlueprintStatusTask] Checking " + key + ": required=" + required + ", found=" + found + ", matches=" + matches);
+                    plugin.getLogger().info("[BlueprintStatusTask] Checking block " + key + ": required=" + required + ", found=" + found + ", matches=" + matches);
+                    return matches;
+                }) && requiredMobs.entrySet().stream()
+                .allMatch(entry -> {
+                    String key = entry.getKey();
+                    Integer required = entry.getValue();
+                    Integer found = foundMobs.get(key);
+
+                    boolean matches = found != null && found >= required;
+                    plugin.getLogger().info("[BlueprintStatusTask] Checking mob " + key + ": required=" + required + ", found=" + found + ", matches=" + matches);
                     return matches;
                 });
 
         // Only update if the status has changed
-        if (blueprint.isActive() != hasAllBlocks) {
-            blueprint.setActive(hasAllBlocks);
+        if (blueprint.isActive() != hasAllRequirements) {
+            blueprint.setActive(hasAllRequirements);
             plugin.getBlueprintManager().saveAll();
 
             // Update visualization for all players viewing this blueprint
