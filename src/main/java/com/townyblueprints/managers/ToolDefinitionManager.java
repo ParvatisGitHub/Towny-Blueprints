@@ -48,7 +48,11 @@ public class ToolDefinitionManager {
             
             if (!materials.isEmpty()) {
                 toolDefinitions.put(key.toLowerCase(), materials);
-                plugin.getLogger().info("Loaded tool definition for " + key + " with " + materials.size() + " tools");
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().info("Loaded tool definition for " + key + " with " + materials.size() + " tools");
+                }
+                plugin.getLogger().info("Successfully Created Block Definitions");
             }
         }
     }
@@ -115,6 +119,7 @@ public class ToolDefinitionManager {
 
         try {
             config.save(file);
+            plugin.getLogger().info("Successfully Created Tool Definitions");
         } catch (IOException e) {
             plugin.getLogger().severe("Could not create default tool definitions file!");
             e.printStackTrace();
