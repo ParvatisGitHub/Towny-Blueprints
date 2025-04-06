@@ -42,31 +42,46 @@ public class ResourceTemplateManager {
     public ResourceTemplate getTemplate(String name) {
         // Remove the "template:" prefix if it exists
         String cleanName = name.toLowerCase().replace("template:", "").trim();
-        plugin.getLogger().info("[ResourceTemplateManager] Looking for template: " + cleanName);
-        plugin.getLogger().info("[ResourceTemplateManager] Available templates: " + String.join(", ", templates.keySet()));
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[ResourceTemplateManager] Looking for template: " + cleanName);
+            plugin.getLogger().info("[ResourceTemplateManager] Available templates: " + String.join(", ", templates.keySet()));
+        }
 
         // First try exact match
         ResourceTemplate template = templates.get(cleanName);
         if (template != null) {
-            plugin.getLogger().info("[ResourceTemplateManager] Found template using exact match: " + cleanName);
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[ResourceTemplateManager] Found template using exact match: " + cleanName);
+            }
             return template;
         }
 
         // Then try with .yml
         template = templates.get(cleanName + ".yml");
         if (template != null) {
-            plugin.getLogger().info("[ResourceTemplateManager] Found template with .yml extension: " + cleanName);
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[ResourceTemplateManager] Found template with .yml extension: " + cleanName);
+            }
             return template;
         }
 
         // Finally try without .yml
         template = templates.get(cleanName.replace(".yml", ""));
         if (template != null) {
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
             plugin.getLogger().info("[ResourceTemplateManager] Found template without .yml extension: " + cleanName);
+            }
             return template;
         }
 
-        plugin.getLogger().warning("[ResourceTemplateManager] Template not found: " + cleanName);
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().warning("[ResourceTemplateManager] Template not found: " + cleanName);
+        }
         return null;
     }
     

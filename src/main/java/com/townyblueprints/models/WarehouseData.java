@@ -1,5 +1,6 @@
 package com.townyblueprints.models;
 
+import com.townyblueprints.TownyBlueprints;
 import lombok.Data;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -52,21 +53,30 @@ public class WarehouseData {
     private void performScan() {
         Location base = blueprint.getLocation();
         containers = inventoryManager.findContainers(
-            base,
-            blueprint.getBlueprint().getSizeX(),
-            blueprint.getBlueprint().getSizeY(),
-            blueprint.getBlueprint().getSizeZ()
+                base,
+                blueprint.getBlueprint().getSizeX(),
+                blueprint.getBlueprint().getSizeY(),
+                blueprint.getBlueprint().getSizeZ()
         );
-        logger.info("[WarehouseData] Scanned and found " + containers.size() + " containers");
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[WarehouseData] Scanned and found " + containers.size() + " containers");
+        }
     }
 
     public boolean addItems(ItemStack items, Player player) {
         if (!ensureMainThread()) return false;
         if (!checkContainers()) return false;
 
-        logger.info("[WarehouseData] Attempting to add " + items.getAmount() + " " + items.getType().name());
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[WarehouseData] Attempting to add " + items.getAmount() + " " + items.getType().name());
+        }
         boolean result = inventoryManager.addItems(containers, items, player);
-        logger.info("[WarehouseData] Add operation " + (result ? "successful" : "failed"));
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[WarehouseData] Add operation " + (result ? "successful" : "failed"));
+        }
         return result;
     }
 
@@ -74,9 +84,15 @@ public class WarehouseData {
         if (!ensureMainThread()) return false;
         if (!checkContainers()) return false;
 
-        logger.info("[WarehouseData] Attempting to remove " + required.getAmount() + " " + required.getType().name());
-        boolean result = inventoryManager.removeItems(containers, required);
-        logger.info("[WarehouseData] Remove operation " + (result ? "successful" : "failed"));
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[WarehouseData] Attempting to remove " + required.getAmount() + " " + required.getType().name());
+
+        }boolean result = inventoryManager.removeItems(containers, required);
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[WarehouseData] Remove operation " + (result ? "successful" : "failed"));
+        }
         return result;
     }
 
@@ -84,9 +100,15 @@ public class WarehouseData {
         if (!ensureMainThread()) return false;
         if (!checkContainers()) return false;
 
-        logger.info("[WarehouseData] Attempting to drain " + durabilityDrain + " durability from " + toolType.name());
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[WarehouseData] Attempting to drain " + durabilityDrain + " durability from " + toolType.name());
+        }
         boolean result = inventoryManager.drainToolDurability(containers, toolType, durabilityDrain);
-        logger.info("[WarehouseData] Durability drain " + (result ? "successful" : "failed"));
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[WarehouseData] Durability drain " + (result ? "successful" : "failed"));
+        }
         return result;
     }
 
@@ -101,15 +123,24 @@ public class WarehouseData {
         if (!ensureMainThread()) return 0;
         if (!checkContainers()) return 0;
 
-        logger.info("[WarehouseData] Counting items of type: " + itemType);
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[WarehouseData] Counting items of type: " + itemType);
+        }
         int count = inventoryManager.countItems(containers, itemType);
-        logger.info("[WarehouseData] Found " + count + " items");
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[WarehouseData] Found " + count + " items");
+        }
         return count;
     }
 
     private boolean ensureMainThread() {
         if (!Bukkit.isPrimaryThread()) {
-            logger.severe("[WarehouseData] Attempted to perform inventory operation from non-main thread!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.severe("[WarehouseData] Attempted to perform inventory operation from non-main thread!");
+            }
             return false;
         }
         return true;
@@ -117,7 +148,10 @@ public class WarehouseData {
 
     private boolean checkContainers() {
         if (containers == null || containers.isEmpty()) {
-            logger.warning("[WarehouseData] No containers available!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.warning("[WarehouseData] No containers available!");
+            }
             scanForContainers();
             return false;
         }

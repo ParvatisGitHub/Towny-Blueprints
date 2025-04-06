@@ -51,7 +51,10 @@ public class UpkeepHandler {
                     try {
                         materials.add(Material.valueOf(materialName.toUpperCase()));
                     } catch (IllegalArgumentException e) {
-                        plugin.getLogger().warning("Invalid material in tool definitions: " + materialName);
+                        // Debug logging
+                        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                            plugin.getLogger().warning("Invalid material in tool definitions: " + materialName);
+                        }
                     }
                 }
                 
@@ -64,37 +67,66 @@ public class UpkeepHandler {
         String upkeepType = blueprint.getBlueprint().getUpkeepType();
         double upkeep = blueprint.getBlueprint().getDailyUpkeep();
 
-        plugin.getLogger().info("[Upkeep] Processing upkeep for blueprint " + blueprint.getId());
-        plugin.getLogger().info("[Upkeep] Type: " + upkeepType + ", Amount: " + upkeep);
-
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[Upkeep] Processing upkeep for blueprint " + blueprint.getId());
+            plugin.getLogger().info("[Upkeep] Type: " + upkeepType + ", Amount: " + upkeep);
+        }
         boolean upkeepMet = false;
 
         if (upkeepType.startsWith("template:")) {
             ResourceTemplate template = plugin.getResourceTemplateManager().getTemplate(upkeepType);
             if (template != null) {
-                plugin.getLogger().info("[Upkeep] Processing template upkeep: " + template.getName());
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().info("[Upkeep] Processing template upkeep: " + template.getName());
+                }
                 upkeepMet = processTemplateUpkeep(blueprint, template);
             } else {
-                plugin.getLogger().warning("[Upkeep] Template not found: " + upkeepType);
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().warning("[Upkeep] Template not found: " + upkeepType);
+                }
             }
         } else if (upkeepType.equals("MONEY")) {
-            plugin.getLogger().info("[Upkeep] Processing money upkeep");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[Upkeep] Processing money upkeep");
+            }
             upkeepMet = blueprint.getTown().getAccount().withdraw(upkeep, "Blueprint daily upkeep");
-            plugin.getLogger().info("[Upkeep] Money withdrawal " + (upkeepMet ? "successful" : "failed"));
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[Upkeep] Money withdrawal " + (upkeepMet ? "successful" : "failed"));
+            }
         } else if (upkeepType.equals("TOOL")) {
-            plugin.getLogger().info("[Upkeep] Processing tool upkeep");
-            upkeepMet = processDurabilityUpkeep(blueprint);
-            plugin.getLogger().info("[Upkeep] Tool durability drain " + (upkeepMet ? "successful" : "failed"));
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[Upkeep] Processing tool upkeep");
+            }
+        upkeepMet = processDurabilityUpkeep(blueprint);
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[Upkeep] Tool durability drain " + (upkeepMet ? "successful" : "failed"));
+            }
         } else {
             // Handle vanilla items by prefixing with "vanilla:" if not already prefixed
             String processedUpkeepType = upkeepType.contains(":") ? upkeepType : "vanilla:" + upkeepType;
-            plugin.getLogger().info("[Upkeep] Processing resource upkeep for " + processedUpkeepType);
-            upkeepMet = processResourceUpkeep(blueprint, processedUpkeepType, (int)upkeep);
-            plugin.getLogger().info("[Upkeep] Resource collection " + (upkeepMet ? "successful" : "failed"));
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[Upkeep] Processing resource upkeep for " + processedUpkeepType);
+            }
+            upkeepMet = processResourceUpkeep(blueprint, processedUpkeepType, (int) upkeep);
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[Upkeep] Resource collection " + (upkeepMet ? "successful" : "failed"));
+            }
         }
 
         if (!upkeepMet && blueprint.isActive()) {
-            plugin.getLogger().warning("[Upkeep] Blueprint " + blueprint.getId() + " deactivated due to insufficient upkeep");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().warning("[Upkeep] Blueprint " + blueprint.getId() + " deactivated due to insufficient upkeep");
+            }
             blueprint.setActive(false);
             plugin.getBlueprintManager().saveAll();
 
@@ -114,15 +146,23 @@ public class UpkeepHandler {
     }
 
     private boolean processResourceUpkeep(PlacedBlueprint blueprint, String upkeepType, int amount) {
-        plugin.getLogger().info("[Upkeep] Attempting to remove " + amount + " of " + upkeepType + " from warehouses");
-        
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[Upkeep] Attempting to remove " + amount + " of " + upkeepType + " from warehouses");
+        }
         // Try to remove items from warehouses first
         if (plugin.getWarehouseManager().removeItems(blueprint.getTown(), upkeepType, amount)) {
-            plugin.getLogger().info("[Upkeep] Successfully removed items from warehouse");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[Upkeep] Successfully removed items from warehouse");
+            }
             return true;
         }
-        
-        plugin.getLogger().info("[Upkeep] Warehouse removal failed, checking blueprint containers");
+
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[Upkeep] Warehouse removal failed, checking blueprint containers");
+        }
 
         // Create ItemStack for the required items
         ItemStack requiredItem;
@@ -137,8 +177,11 @@ public class UpkeepHandler {
         } else {
             requiredItem = ItemUtil.getItemStack(upkeepType, amount, null);
             if (requiredItem == null) {
-                plugin.getLogger().warning("[Upkeep] Failed to create ItemStack for " + upkeepType);
-                return false;
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().warning("[Upkeep] Failed to create ItemStack for " + upkeepType);
+                    return false;
+                }
             }
         }
 
@@ -146,12 +189,17 @@ public class UpkeepHandler {
         for (Container container : containers) {
             if (hasEnoughItems(container, requiredItem)) {
                 removeItems(container, requiredItem);
-                plugin.getLogger().info("[Upkeep] Successfully removed items from blueprint container");
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().info("[Upkeep] Successfully removed items from blueprint container");
+                }
                 return true;
             }
         }
-        
-        plugin.getLogger().warning("[Upkeep] No containers found with sufficient items");
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().warning("[Upkeep] No containers found with sufficient items");
+        }
         return false;
     }
 
@@ -180,11 +228,17 @@ public class UpkeepHandler {
 	}
 
     private boolean processTemplateUpkeep(PlacedBlueprint blueprint, ResourceTemplate template) {
-    plugin.getLogger().info("[Upkeep] Processing template upkeep for " + blueprint.getId());
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[Upkeep] Processing template upkeep for " + blueprint.getId());
+        }
     boolean allUpkeepMet = true;
 
     for (ResourceTemplate.ResourceEntry resource : template.getResources()) {
-        plugin.getLogger().info("[Upkeep] Processing resource: " + resource.getType());
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[Upkeep] Processing resource: " + resource.getType());
+        }
         
         if (resource.getType().equals("TOOL")) {
             String toolType = resource.getToolType();
@@ -195,7 +249,10 @@ public class UpkeepHandler {
                 Material specificTool = Material.valueOf(toolType.toUpperCase());
                 // Try warehouse first
                 if (plugin.getWarehouseManager().drainToolDurability(blueprint.getTown(), specificTool, durabilityDrain)) {
-                    plugin.getLogger().info("[Upkeep] Successfully drained specific tool: " + specificTool.name());
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                        plugin.getLogger().info("[Upkeep] Successfully drained specific tool: " + specificTool.name());
+                    }
                     continue;
                 }
 
@@ -210,7 +267,10 @@ public class UpkeepHandler {
                 }
 
                 if (!toolFound) {
-                    plugin.getLogger().warning("[Upkeep] No suitable specific tool found: " + specificTool.name());
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                        plugin.getLogger().warning("[Upkeep] No suitable specific tool found: " + specificTool.name());
+                    }
                     allUpkeepMet = false;
                 }
                 continue;
@@ -218,7 +278,10 @@ public class UpkeepHandler {
                 // Not a specific material, try tool definition
                 List<Material> validTools = plugin.getToolDefinitionManager().getDefinition(toolType.toLowerCase());
                 if (validTools.isEmpty()) {
-                    plugin.getLogger().warning("[Upkeep] No valid tools found for type: " + toolType);
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                        plugin.getLogger().warning("[Upkeep] No valid tools found for type: " + toolType);
+                    }
                     allUpkeepMet = false;
                     continue;
                 }
@@ -226,7 +289,10 @@ public class UpkeepHandler {
                 // Try warehouse first with each valid tool type
                 boolean toolFound = false;
                 for (Material toolMaterial : validTools) {
-                    plugin.getLogger().info("[Upkeep] Trying tool: " + toolMaterial.name());
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                        plugin.getLogger().info("[Upkeep] Trying tool: " + toolMaterial.name());
+                    }
                     if (plugin.getWarehouseManager().drainToolDurability(blueprint.getTown(), toolMaterial, durabilityDrain)) {
                         toolFound = true;
                         break;
@@ -248,35 +314,56 @@ public class UpkeepHandler {
                 }
 
                 if (!toolFound) {
-                    plugin.getLogger().warning("[Upkeep] No suitable tool found for durability drain");
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                        plugin.getLogger().warning("[Upkeep] No suitable tool found for durability drain");
+                    }
                     allUpkeepMet = false;
                 }
             }
         } else if (resource.getType().equals("MONEY")) {
             int amount = resource.getRandomAmount();
-            plugin.getLogger().info("[Upkeep] Processing money upkeep: " + amount);
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[Upkeep] Processing money upkeep: " + amount);
+            }
             
             if (!blueprint.getTown().getAccount().withdraw(amount, "Blueprint daily upkeep")) {
-                plugin.getLogger().warning("[Upkeep] Failed to withdraw money: " + amount);
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().warning("[Upkeep] Failed to withdraw money: " + amount);
+                }
                 allUpkeepMet = false;
             } else {
-                plugin.getLogger().info("[Upkeep] Successfully withdrew money: " + amount);
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().info("[Upkeep] Successfully withdrew money: " + amount);
+                }
             }
         } else {
             int amount = resource.getRandomAmount();
             String resourceType = resource.getType();
-            plugin.getLogger().info("[Upkeep] Processing resource upkeep: " + amount + " of " + resourceType);
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[Upkeep] Processing resource upkeep: " + amount + " of " + resourceType);
+            }
             
             // Try warehouse first
             if (plugin.getWarehouseManager().removeItems(blueprint.getTown(), resourceType, amount)) {
-                plugin.getLogger().info("[Upkeep] Successfully removed items from warehouse");
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().info("[Upkeep] Successfully removed items from warehouse");
+                }
                 continue;
             }
             
             // If warehouse fails, check containers
             ItemStack requiredItem = ItemUtil.getItemStack(resourceType, amount, null);
             if (requiredItem == null) {
-                plugin.getLogger().warning("[Upkeep] Failed to create ItemStack for: " + resourceType);
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().warning("[Upkeep] Failed to create ItemStack for: " + resourceType);
+                }
                 allUpkeepMet = false;
                 continue;
             }
@@ -287,19 +374,28 @@ public class UpkeepHandler {
                 if (hasEnoughItems(container, requiredItem)) {
                     removeItems(container, requiredItem);
                     resourceFound = true;
-                    plugin.getLogger().info("[Upkeep] Successfully removed items from container");
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                        plugin.getLogger().info("[Upkeep] Successfully removed items from container");
+                    }
                     break;
                 }
             }
 
             if (!resourceFound) {
-                plugin.getLogger().warning("[Upkeep] No containers found with sufficient items");
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().warning("[Upkeep] No containers found with sufficient items");
+                }
                 allUpkeepMet = false;
             }
         }
     }
 
-    plugin.getLogger().info("[Upkeep] Template upkeep processing complete. Success: " + allUpkeepMet);
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[Upkeep] Template upkeep processing complete. Success: " + allUpkeepMet);
+        }
     return allUpkeepMet;
 }
 
@@ -308,7 +404,10 @@ public class UpkeepHandler {
         ItemStack[] contents = container.getInventory().getContents();
         boolean success = plugin.getWarehouseManager().drainToolDurability(blueprint.getTown(), toolType, durabilityDrain);
         if (!success) {
-			plugin.getLogger().warning("Tool upkeep failed: Insufficient durability in warehouse for " + toolType);
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().warning("Tool upkeep failed: Insufficient durability in warehouse for " + toolType);
+            }
 		}
 		// Check if we're looking for a generic tool type
         String genericType = toolType.name();
@@ -356,7 +455,10 @@ public class UpkeepHandler {
                 }
             }
         }
-        plugin.getLogger().warning("Tool upkeep failed: No matching tools found for " + toolType);
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().warning("Tool upkeep failed: No matching tools found for " + toolType);
+        }
 		return false;
     }
 

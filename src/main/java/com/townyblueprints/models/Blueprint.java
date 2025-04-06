@@ -1,16 +1,35 @@
 package com.townyblueprints.models;
 
 import lombok.Data;
+import lombok.Getter;
 import org.bukkit.Material;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 
 @Data
 public class Blueprint {
     private String name = "New Blueprint";
     private String description = "";
+    /**
+     * -- GETTER --
+     *  Gets the required blocks map where:
+     *  - Keys are either Material names or block definition names (e.g., "OAK_LOG" or "logs")
+     *  - Values are the required quantities
+     */
+    @Getter
     private Map<String, Integer> requiredBlocks = new HashMap<>();
-    private Map<String, Integer> requiredMobs = new HashMap<>(); // New field for mob requirements
+    /**
+     * -- GETTER --
+     *  Gets the required mobs map where:
+     *  - Keys are entity type names (e.g., "VILLAGER", "COW")
+     *  - Values are the required quantities
+     */
+    @Getter
+    private Map<String, Integer> requiredMobs = new HashMap<>();
+    private Set<String> requiredBiomes = new HashSet<>(); // New field for required biomes
+    private Set<String> forbiddenBiomes = new HashSet<>(); // New field for forbidden biomes
     private Material displayMaterial = Material.PAPER;
     private int sizeX = 1;
     private int sizeY = 1;
@@ -34,15 +53,6 @@ public class Blueprint {
     private int requiredCount = 1;
     private boolean sharedUpkeep = false;
     private double upkeepMultiplier = 1.0;
-
-    /**
-     * Gets the required blocks map where:
-     * - Keys are either Material names or block definition names (e.g., "OAK_LOG" or "logs")
-     * - Values are the required quantities
-     */
-    public Map<String, Integer> getRequiredBlocks() {
-        return requiredBlocks;
-    }
 
     /**
      * Sets the required blocks map where:
@@ -93,15 +103,6 @@ public class Blueprint {
     }
 
     /**
-     * Gets the required mobs map where:
-     * - Keys are entity type names (e.g., "VILLAGER", "COW")
-     * - Values are the required quantities
-     */
-    public Map<String, Integer> getRequiredMobs() {
-        return requiredMobs;
-    }
-
-    /**
      * Sets the required mobs map
      * @param mobs Map of entity types and their required quantities
      */
@@ -146,6 +147,64 @@ public class Blueprint {
      */
     public boolean requiresMob(String entityType) {
         return entityType != null && this.requiredMobs.containsKey(entityType.toUpperCase());
+    }
+
+    /**
+     * Adds a required biome to the blueprint
+     * @param biome Biome name (e.g., "PLAINS", "FOREST")
+     */
+    public void addRequiredBiome(String biome) {
+        if (biome != null) {
+            this.requiredBiomes.add(biome.toUpperCase());
+        }
+    }
+
+    /**
+     * Removes a required biome from the blueprint
+     * @param biome Biome name
+     */
+    public void removeRequiredBiome(String biome) {
+        if (biome != null) {
+            this.requiredBiomes.remove(biome.toUpperCase());
+        }
+    }
+
+    /**
+     * Adds a forbidden biome to the blueprint
+     * @param biome Biome name (e.g., "DESERT", "OCEAN")
+     */
+    public void addForbiddenBiome(String biome) {
+        if (biome != null) {
+            this.forbiddenBiomes.add(biome.toUpperCase());
+        }
+    }
+
+    /**
+     * Removes a forbidden biome from the blueprint
+     * @param biome Biome name
+     */
+    public void removeForbiddenBiome(String biome) {
+        if (biome != null) {
+            this.forbiddenBiomes.remove(biome.toUpperCase());
+        }
+    }
+
+    /**
+     * Checks if a biome is required
+     * @param biome Biome name
+     * @return true if the biome is required
+     */
+    public boolean requiresBiome(String biome) {
+        return biome != null && this.requiredBiomes.contains(biome.toUpperCase());
+    }
+
+    /**
+     * Checks if a biome is forbidden
+     * @param biome Biome name
+     * @return true if the biome is forbidden
+     */
+    public boolean isBiomeForbidden(String biome) {
+        return biome != null && this.forbiddenBiomes.contains(biome.toUpperCase());
     }
 
     /**

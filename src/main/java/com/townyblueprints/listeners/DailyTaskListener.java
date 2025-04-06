@@ -29,16 +29,24 @@ public class DailyTaskListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onNewDay(NewDayEvent event) {
         if (!isProcessing.compareAndSet(false, true)) {
-            plugin.getLogger().warning("Daily tasks are already being processed!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().warning("Daily tasks are already being processed!");
+            }
             return;
         }
 
         try {
             // Refresh warehouse data first
-            plugin.getLogger().info("Refreshing warehouse data...");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("Refreshing warehouse data...");
+            }
             plugin.getWarehouseManager().loadWarehouses();
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
             plugin.getLogger().info("Warehouse data refresh complete");
-
+}
             List<PlacedBlueprint> blueprints = new ArrayList<>(plugin.getBlueprintManager().getAllPlacedBlueprints());
 
             // Group blueprints by town for combined messages

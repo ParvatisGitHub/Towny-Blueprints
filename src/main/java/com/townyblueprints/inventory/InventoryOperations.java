@@ -1,13 +1,12 @@
 package com.townyblueprints.inventory;
 
+import com.townyblueprints.TownyBlueprints;
 import com.townyblueprints.util.ItemUtil;
 import org.bukkit.Material;
 import org.bukkit.block.Container;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.block.BlockState;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -30,12 +29,18 @@ public class InventoryOperations {
     }
 
     if (containers.isEmpty()) {
-        logger.warning("[InventoryOperations] No containers provided!");
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.warning("[InventoryOperations] No containers provided!");
+        }
 		return false;
     }
 
     int toRemove = required.getAmount();
-    logger.info("[InventoryOperations] Attempting to remove " + toRemove + " " + required.getType().name());
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[InventoryOperations] Attempting to remove " + toRemove + " " + required.getType().name());
+        }
 
     // First, verify we have enough items across all containers
     int totalAvailable = 0;
@@ -49,7 +54,10 @@ public class InventoryOperations {
     }
 
     if (totalAvailable < toRemove) {
-        logger.warning("[InventoryOperations] Not enough items! Found: " + totalAvailable + ", Need: " + toRemove);
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.warning("[InventoryOperations] Not enough items! Found: " + totalAvailable + ", Need: " + toRemove);
+        }
         return false; // Not enough items to remove
     }
 
@@ -74,38 +82,50 @@ public class InventoryOperations {
                     remainingToRemove -= currentAmount;
                     inv.setItem(slot, null); // Remove the whole stack
                     modified = true;
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
                     logger.info("[InventoryOperations] Removed entire stack of " + currentAmount +
                             " from container " + containers.indexOf(container) + " slot " + slot);
+                    }
                 } else {
                     // Remove part of the stack
                     currentItem.setAmount(currentAmount - remainingToRemove); // Reduce the stack size
                     inv.setItem(slot, currentItem); // Update the item stack in the inventory
                     remainingToRemove = 0; // All items have been removed
                     modified = true;
-                    logger.info("[InventoryOperations] Removed " + remainingToRemove +
-                            " items, leaving " + (currentAmount - remainingToRemove) +
-                            " in container " + containers.indexOf(container) + " slot " + slot);
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                        logger.info("[InventoryOperations] Removed " + remainingToRemove +
+                                " items, leaving " + (currentAmount - remainingToRemove) +
+                                " in container " + containers.indexOf(container) + " slot " + slot);
+                    }
                 }
             }
         }
 
         // Update the inventory in the container if modified (only modify inventory, no block update)
         if (modified) {
-            logger.info("[InventoryOperations] Inventory modified for container " + containers.indexOf(container));
-            // No need to update block state, just trust Minecraft to handle it
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.info("[InventoryOperations] Inventory modified for container " + containers.indexOf(container));
+            }
         }
     }
     boolean success = remainingToRemove == 0;
-    logger.info("[InventoryOperations] Remove operation " + (success ? "successful" : "failed") +
-            " (Remaining to remove: " + remainingToRemove + ")");
-    
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[InventoryOperations] Remove operation " + (success ? "successful" : "failed") +
+                    " (Remaining to remove: " + remainingToRemove + ")");
+        }
 	 if (!success) {
         // If we haven't removed all items, calculate how many were successfully removed
         int removedAmount = toRemove - remainingToRemove;
         int itemsToAddBack = removedAmount;
 
-        // Call the addItems method to add the remaining items back to the containers
-        logger.info("[InventoryOperations] Partial removal detected. Adding back " + itemsToAddBack + " items.");
+         // Debug logging
+         if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+             logger.info("[InventoryOperations] Partial removal detected. Adding back " + itemsToAddBack + " items.");
+         }
         addItems(containers, new ItemStack(required.getType(), itemsToAddBack), null);
     }
 	return success;
@@ -120,12 +140,18 @@ public class InventoryOperations {
         }
 
         if (containers.isEmpty()) {
-            logger.warning("[InventoryOperations] No containers provided!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.warning("[InventoryOperations] No containers provided!");
+            }
             return false;
         }
 
         int toAdd = items.getAmount();
-        logger.info("[InventoryOperations] Attempting to add " + toAdd + " " + items.getType().name());
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[InventoryOperations] Attempting to add " + toAdd + " " + items.getType().name());
+        }
 
         int remainingToAdd = toAdd;
         boolean modified = false;
@@ -145,7 +171,10 @@ public class InventoryOperations {
                     current.setAmount(current.getAmount() + add);
                     remainingToAdd -= add;
                     modified = true;
-                    logger.info("[InventoryOperations] Added " + add + " to existing stack in slot " + slot);
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                        logger.info("[InventoryOperations] Added " + add + " to existing stack in slot " + slot);
+                    }
                 }
             }
 
@@ -159,15 +188,20 @@ public class InventoryOperations {
                     inv.setItem(slot, newStack);
                     remainingToAdd -= add;
                     modified = true;
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
                     logger.info("[InventoryOperations] Added " + add + " to empty slot " + slot);
+                    }
                 }
             }
         }
 
 		boolean success = remainingToAdd == 0;
-        logger.info("[InventoryOperations] Add operation " + (success ? "successful" : "failed") +
-                " (Remaining to add: " + remainingToAdd + ")");
-
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[InventoryOperations] Add operation " + (success ? "successful" : "failed") +
+                    " (Remaining to add: " + remainingToAdd + ")");
+        }
 	   // Handle remaining items
         if (!success) {
 			if (remainingToAdd > 0) {
@@ -194,9 +228,15 @@ public class InventoryOperations {
 						Container firstContainer = containers.get(0);
 						Location dropLocation = firstContainer.getLocation().add(0.5, 0.5, 0.5); // Center of the block
 						firstContainer.getWorld().dropItemNaturally(dropLocation, leftoverItems);
-						logger.info("[InventoryOperations] Dropped " + itemsNotAdded + " items at warehouse location: " + dropLocation);
+                        // Debug logging
+                        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                            logger.info("[InventoryOperations] Dropped " + itemsNotAdded + " items at warehouse location: " + dropLocation);
+                        }
 					} else {
-						logger.warning("[InventoryOperations] No containers available to drop items!");
+                        // Debug logging
+                        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                            logger.warning("[InventoryOperations] No containers available to drop items!");
+                        }
 						return false;
 					}
 				}
@@ -255,7 +295,10 @@ private void dropItemsAtFeet(Player player, ItemStack item, int remainingItems) 
         }
 
         if (containers.isEmpty()) {
-            logger.warning("[InventoryOperations] No containers provided!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.warning("[InventoryOperations] No containers provided!");
+            }
             return false;
         }
 
@@ -275,12 +318,18 @@ private void dropItemsAtFeet(Player player, ItemStack item, int remainingItems) 
                         item.setItemMeta(meta);
                         inv.setItem(slot, item);
                         modified = true;
-                        logger.info("[InventoryOperations] Drained " + durabilityDrain + " durability from tool in slot " + slot);
+                        // Debug logging
+                        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                            logger.info("[InventoryOperations] Drained " + durabilityDrain + " durability from tool in slot " + slot);
+                        }
                         return true; // Return true when durability is successfully drained
                     } else {
                         inv.clear(slot);
                         modified = true;
-                        logger.info("[InventoryOperations] Tool in slot " + slot + " broke during use");
+                        // Debug logging
+                        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                            logger.info("[InventoryOperations] Tool in slot " + slot + " broke during use");
+                        }
                         return true; // Return true when tool breaks (durability fully consumed)
                     }
                 }

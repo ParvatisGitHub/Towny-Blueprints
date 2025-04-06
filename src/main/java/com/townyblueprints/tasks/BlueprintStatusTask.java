@@ -15,10 +15,7 @@ import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import org.bukkit.util.BoundingBox;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class BlueprintStatusTask extends BukkitRunnable {
     private final TownyBlueprints plugin;
@@ -80,6 +77,9 @@ public class BlueprintStatusTask extends BukkitRunnable {
         Map<String, Integer> foundBlocks = new HashMap<>();
         Map<String, Integer> requiredMobs = blueprint.getBlueprint().getRequiredMobs();
         Map<String, Integer> foundMobs = new HashMap<>();
+        Set<String> requiredBiomes = blueprint.getBlueprint().getRequiredBiomes();
+        Set<String> forbiddenBiomes = blueprint.getBlueprint().getForbiddenBiomes();
+        Set<String> foundBiomes = new HashSet<>();
 
         // Initialize counters for block definitions
         for (String key : requiredBlocks.keySet()) {
@@ -92,8 +92,56 @@ public class BlueprintStatusTask extends BukkitRunnable {
         }
 
         // Debug logging
-        plugin.getLogger().info("[BlueprintStatusTask] Required blocks: " + requiredBlocks);
-        plugin.getLogger().info("[BlueprintStatusTask] Required mobs: " + requiredMobs);
+        if (plugin.getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[BlueprintStatusTask] Required blocks: " + requiredBlocks);
+            plugin.getLogger().info("[BlueprintStatusTask] Required mobs: " + requiredMobs);
+            plugin.getLogger().info("[BlueprintStatusTask] Required biomes: " + requiredBiomes);
+            plugin.getLogger().info("[BlueprintStatusTask] Forbidden biomes: " + forbiddenBiomes);
+        }
+        // Check biomes in the blueprint area
+        boolean hasValidBiomes = true;
+        for (int x = 0; x < blueprint.getBlueprint().getSizeX(); x += 4) {
+            for (int z = 0; z < blueprint.getBlueprint().getSizeZ(); z += 4) {
+                Location checkLoc = loc.clone().add(x, 0, z);
+                String biomeName = checkLoc.getBlock().getBiome().toString();
+                foundBiomes.add(biomeName);
+
+                // Check if this biome is forbidden
+                if (forbiddenBiomes.contains(biomeName)) {
+                    // Debug logging
+                    if (plugin.getConfigManager().isDebugMode()) {
+                        plugin.getLogger().info("[BlueprintStatusTask] Found forbidden biome: " + biomeName);
+                    }
+                    hasValidBiomes = false;
+                    break;
+                }
+            }
+            if (!hasValidBiomes) break;
+        }
+
+        // Check if all required biomes are present
+        if (hasValidBiomes && !requiredBiomes.isEmpty()) {
+            hasValidBiomes = foundBiomes.containsAll(requiredBiomes);
+            // Debug logging
+            if (plugin.getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[BlueprintStatusTask] Found biomes: " + foundBiomes);
+                plugin.getLogger().info("[BlueprintStatusTask] Has all required biomes: " + hasValidBiomes);
+            }
+        }
+
+        // If biomes are invalid, set blueprint as inactive and return early
+        if (!hasValidBiomes) {
+            if (blueprint.isActive()) {
+                blueprint.setActive(false);
+                plugin.getBlueprintManager().saveAll();
+                plugin.getServer().getOnlinePlayers().forEach(player -> {
+                    if (player.getWorld().equals(world)) {
+                        plugin.getPlacementHandler().updateVisualization(player, blueprint);
+                    }
+                });
+            }
+            return;
+        }
 
         // Scan the area for required blocks
         for (int x = 0; x < blueprint.getBlueprint().getSizeX(); x++) {
@@ -137,7 +185,6 @@ public class BlueprintStatusTask extends BukkitRunnable {
 
         // Check for required mobs in the area
         if (!requiredMobs.isEmpty()) {
-            // Create a bounding box for the blueprint area
             BoundingBox box = new BoundingBox(
                     loc.getX(), loc.getY(), loc.getZ(),
                     loc.getX() + blueprint.getBlueprint().getSizeX(),
@@ -145,7 +192,6 @@ public class BlueprintStatusTask extends BukkitRunnable {
                     loc.getZ() + blueprint.getBlueprint().getSizeZ()
             );
 
-            // Get all entities in the chunks that intersect with the blueprint
             for (Entity entity : world.getNearbyEntities(box)) {
                 String entityType = entity.getType().name();
                 if (requiredMobs.containsKey(entityType)) {
@@ -155,10 +201,11 @@ public class BlueprintStatusTask extends BukkitRunnable {
         }
 
         // Debug logging
-        plugin.getLogger().info("[BlueprintStatusTask] Found blocks: " + foundBlocks);
-        plugin.getLogger().info("[BlueprintStatusTask] Found mobs: " + foundMobs);
-
-        // Check if all required blocks and mobs are present
+        if (plugin.getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[BlueprintStatusTask] Found blocks: " + foundBlocks);
+            plugin.getLogger().info("[BlueprintStatusTask] Found mobs: " + foundMobs);
+        }
+        // Check if all requirements are met
         boolean hasAllRequirements = requiredBlocks.entrySet().stream()
                 .allMatch(entry -> {
                     String key = entry.getKey();
@@ -166,7 +213,10 @@ public class BlueprintStatusTask extends BukkitRunnable {
                     Integer found = foundBlocks.get(key);
 
                     boolean matches = found != null && found >= required;
-                    plugin.getLogger().info("[BlueprintStatusTask] Checking block " + key + ": required=" + required + ", found=" + found + ", matches=" + matches);
+                    // Debug logging
+                    if (plugin.getConfigManager().isDebugMode()) {
+                        plugin.getLogger().info("[BlueprintStatusTask] Checking block " + key + ": required=" + required + ", found=" + found + ", matches=" + matches);
+                    }
                     return matches;
                 }) && requiredMobs.entrySet().stream()
                 .allMatch(entry -> {
@@ -175,7 +225,10 @@ public class BlueprintStatusTask extends BukkitRunnable {
                     Integer found = foundMobs.get(key);
 
                     boolean matches = found != null && found >= required;
+                    // Debug logging
+                    if (plugin.getConfigManager().isDebugMode()) {
                     plugin.getLogger().info("[BlueprintStatusTask] Checking mob " + key + ": required=" + required + ", found=" + found + ", matches=" + matches);
+                    }
                     return matches;
                 });
 

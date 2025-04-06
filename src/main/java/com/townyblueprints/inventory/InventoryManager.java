@@ -1,5 +1,6 @@
 package com.townyblueprints.inventory;
 
+import com.townyblueprints.TownyBlueprints;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -30,7 +31,10 @@ public class InventoryManager {
 
     public boolean addItems(List<Container> containers, ItemStack items, Player player) {
         if (!Bukkit.isPrimaryThread()) {
-            logger.warning("[InventoryManager] Attempted to add items from non-main thread!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.warning("[InventoryManager] Attempted to add items from non-main thread!");
+            }
             return false;
         }
 
@@ -39,7 +43,10 @@ public class InventoryManager {
 
     public boolean removeItems(List<Container> containers, ItemStack required) {
         if (!Bukkit.isPrimaryThread()) {
-            logger.warning("[InventoryManager] Attempted to remove items from non-main thread!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.warning("[InventoryManager] Attempted to remove items from non-main thread!");
+            }
             return false;
         }
 
@@ -48,7 +55,10 @@ public class InventoryManager {
 
     public boolean drainToolDurability(List<Container> containers, Material toolType, int durabilityDrain) {
         if (!Bukkit.isPrimaryThread()) {
-            logger.warning("[InventoryManager] Attempted to drain tool durability from non-main thread!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.warning("[InventoryManager] Attempted to drain tool durability from non-main thread!");
+            }
             return false;
         }
 
@@ -57,7 +67,10 @@ public class InventoryManager {
 
     public boolean hasSpace(List<Container> containers) {
         if (!Bukkit.isPrimaryThread()) {
-            logger.warning("[InventoryManager] Attempted to check space from non-main thread!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.warning("[InventoryManager] Attempted to check space from non-main thread!");
+            }
             return false;
         }
 
@@ -66,7 +79,10 @@ public class InventoryManager {
 
     public int countItems(List<Container> containers, String itemType) {
         if (!Bukkit.isPrimaryThread()) {
-            logger.warning("[InventoryManager] Attempted to count items from non-main thread!");
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                logger.warning("[InventoryManager] Attempted to count items from non-main thread!");
+            }
             return 0;
         }
 

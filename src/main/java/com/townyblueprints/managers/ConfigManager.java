@@ -19,11 +19,13 @@ public class ConfigManager {
     private File blueprintsFile;
     private FileConfiguration blueprintsConfig;
     private final Map<Integer, Integer> maxBlueprintsPerLevel = new HashMap<>();
+    private boolean debugMode;
 
     public void loadConfig() {
         plugin.saveDefaultConfig();
         this.config = plugin.getConfig();
-        
+        this.debugMode = config.getBoolean("debug.debugMode", false);
+
         // Load max blueprints per level
         maxBlueprintsPerLevel.clear();
         if (config.contains("max_blueprints_per_level")) {
@@ -42,6 +44,9 @@ public class ConfigManager {
             plugin.saveResource("blueprints.yml", false);
         }
         this.blueprintsConfig = YamlConfiguration.loadConfiguration(blueprintsFile);
+    }
+    public boolean isDebugMode() {
+        return debugMode;
     }
 
     public void saveBlueprints() {

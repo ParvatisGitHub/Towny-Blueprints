@@ -157,3 +157,6 @@ messages:
     incomplete: "&eThis blueprint requires %count% more of the same type to function optimally!"
     complete: "&aAll required blueprints of this type are present! Operating at optimal efficiency."
     shared_upkeep: "&aUpkeep costs are being shared between %count% blueprints."
+
+#debug mode toggle enabling console logs for plugin activities
+debugMode: false

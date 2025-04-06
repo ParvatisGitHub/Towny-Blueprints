@@ -1,5 +1,6 @@
 package com.townyblueprints.inventory;
 
+import com.townyblueprints.TownyBlueprints;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
@@ -28,13 +29,19 @@ public class InventoryScanner {
                     Block block = loc.getBlock();
                     if (block.getState() instanceof Container) {
                         containers.add((Container) block.getState());
+                        // Debug logging
+                        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
                         logger.info("[InventoryScanner] Found container at " + loc);
+                        }
                     }
                 }
             }
         }
 
-        logger.info("[InventoryScanner] Found " + containers.size() + " containers at " + baseLocation);
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            logger.info("[InventoryScanner] Found " + containers.size() + " containers at " + baseLocation);
+        }
         return containers;
     }
 }

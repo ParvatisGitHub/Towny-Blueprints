@@ -1,9 +1,9 @@
 name: TownyBlueprints
-version: '${version}'
+version: '${0.1.0.1}'
 main: com.townyblueprints.TownyBlueprints
 api-version: '1.21'
 depend: [Towny]
-authors: [YourName]
+authors: [ParvatiMountains]
 description: A Towny addon that adds blueprint-based town features
 
 permissions:

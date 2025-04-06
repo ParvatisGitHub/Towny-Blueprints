@@ -76,7 +76,10 @@ public class WarehouseManager {
             } else {
                 required = ItemUtil.getItemStack(itemType, amount, null);
                 if (required == null) {
-                    plugin.getLogger().warning("Could not create ItemStack for: " + itemType);
+                    // Debug logging
+                    if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                        plugin.getLogger().warning("Could not create ItemStack for: " + itemType);
+                    }
                     return false;
                 }
             }
@@ -138,20 +141,29 @@ public class WarehouseManager {
 	public boolean verifyWarehouseContents(Town town, String itemType, int amount) {
 		List<WarehouseData> warehouses = townWarehouses.get(town);
 		if (warehouses == null || warehouses.isEmpty()) {
-			plugin.getLogger().warning("[Warehouse] No warehouses found for town " + town.getName());
+            // Debug logging
+            if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().warning("[Warehouse] No warehouses found for town " + town.getName());
+            }
 			return false;
 		}
 
-		plugin.getLogger().info("[Warehouse] Verifying contents for " + itemType + " (amount: " + amount + ")");
-    
+        // Debug logging
+        if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("[Warehouse] Verifying contents for " + itemType + " (amount: " + amount + ")");
+        }
 		for (WarehouseData warehouse : warehouses) {
 			if (warehouse.getBlueprint().isActive()) {
-				plugin.getLogger().info("[Warehouse] Checking warehouse at " + warehouse.getBlueprint().getLocation());
-            
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().info("[Warehouse] Checking warehouse at " + warehouse.getBlueprint().getLocation());
+                }
 				// Count items in warehouse
 				int totalFound = warehouse.countItems(itemType);
-				plugin.getLogger().info("[Warehouse] Found " + totalFound + " items of type " + itemType);
-            
+                // Debug logging
+                if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
+                    plugin.getLogger().info("[Warehouse] Found " + totalFound + " items of type " + itemType);
+                }
 				if (totalFound >= amount) {
 					return true;
 				}
