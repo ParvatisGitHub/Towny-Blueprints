@@ -22,8 +22,8 @@ public class BlueprintPlacementHandler {
     private final TownyBlueprints plugin;
     private final PlacementVisualizer placementVisualizer;
     private final ExistingBlueprintVisualizer existingVisualizer;
-    
-    @Getter 
+
+    @Getter
     private final Map<UUID, Blueprint> playerPlacements = new HashMap<>();
     private final Map<UUID, Location> selectedLocations = new HashMap<>();
     private final Map<UUID, Set<TownBlock>> selectedPlots = new HashMap<>();
@@ -49,27 +49,27 @@ public class BlueprintPlacementHandler {
             int requiredTownLevel = blueprint.getRequiredTownLevel();
             int actualTownLevel = town.getLevelNumber();
             if (actualTownLevel < requiredTownLevel) {
-                player.sendMessage(String.format("§cYour town must be level %d to place this blueprint!", 
-                    blueprint.getRequiredTownLevel()));
+                player.sendMessage(String.format("§cYour town must be level %d to place this blueprint!",
+                        blueprint.getRequiredTownLevel()));
                 return;
             }
         }
         // Check maximum per town limit
         if (blueprint.getMaxPerTown() > 0) {
             long count = plugin.getBlueprintManager().getPlacedBlueprintsForTown(town).stream()
-                .filter(bp -> bp.getBlueprint().getName().equals(blueprint.getName()))
-                .count();
+                    .filter(bp -> bp.getBlueprint().getName().equals(blueprint.getName()))
+                    .count();
             if (count >= blueprint.getMaxPerTown()) {
-                player.sendMessage(String.format("§cYour town has reached the maximum number of %s blueprints (%d)!", 
-                    blueprint.getName(), blueprint.getMaxPerTown()));
+                player.sendMessage(String.format("§cYour town has reached the maximum number of %s blueprints (%d)!",
+                        blueprint.getName(), blueprint.getMaxPerTown()));
                 return;
             }
         }
 
         // Check type limits
         if (!checkTypeLimits(town, blueprint)) {
-            player.sendMessage(String.format("§cYour town has reached its limit for %s type blueprints!", 
-                blueprint.getType()));
+            player.sendMessage(String.format("§cYour town has reached its limit for %s type blueprints!",
+                    blueprint.getType()));
             return;
         }
 
@@ -79,60 +79,45 @@ public class BlueprintPlacementHandler {
         if (maxBlueprints > 0) {
             int currentBlueprints = plugin.getBlueprintManager().getPlacedBlueprintsForTown(town).size();
             if (currentBlueprints >= maxBlueprints) {
-                player.sendMessage(String.format("§cYour town (level %d) has reached its maximum number of blueprints (%d)!", 
-                    townLevel, maxBlueprints));
+                player.sendMessage(String.format("§cYour town (level %d) has reached its maximum number of blueprints (%d)!",
+                        townLevel, maxBlueprints));
                 return;
             }
         }
 
         cancelPlacement(player);
-        
+
         playerPlacements.put(player.getUniqueId(), blueprint);
         centerMode.put(player.getUniqueId(), false);
         placementVisualizer.startVisualization(player, blueprint);
-        
-        if (blueprint.isPlotBased()) {
-            player.sendMessage("§aLeft-click to select plots, right-click to confirm placement.");
-            player.sendMessage(String.format("§aThis blueprint requires %d plot%s.", 
-                blueprint.getRequiredPlots(),
-                blueprint.getRequiredPlots() > 1 ? "s" : ""));
-            if (blueprint.getConnectsPlots()) {
-                player.sendMessage("§aSelected plots must be connected.");
-            }
-        } else {
-            player.sendMessage("§aLeft-click to select location, right-click to confirm placement.");
-            player.sendMessage("§aUse /blueprint mode to toggle between corner and center placement.");
-        }
+
+        player.sendMessage("§aLeft-click to select location, right-click to confirm placement.");
+        player.sendMessage("§aUse /blueprint mode to toggle between corner and center placement.");
         player.sendMessage("§aUse /blueprint cancel to cancel placement.");
     }
 
     private boolean checkTypeLimits(Town town, Blueprint blueprint) {
         int townLevel = plugin.getConfigManager().getTownLevel(town);
         String type = blueprint.getType();
-        
+
         // Get the type limit for this town level
         int typeLimit = plugin.getConfigManager().getTypeLimitForLevel(type, townLevel);
         if (typeLimit == -1) return true; // No limit
-        
+
         // Count existing blueprints of this type
         long count = plugin.getBlueprintManager().getPlacedBlueprintsForTown(town).stream()
-            .filter(bp -> bp.getBlueprint().getType().equals(type))
-            .count();
-            
+                .filter(bp -> bp.getBlueprint().getType().equals(type))
+                .count();
+
         return count < typeLimit;
     }
 
     public void togglePlacementMode(Player player) {
         UUID playerId = player.getUniqueId();
         Blueprint blueprint = playerPlacements.get(playerId);
-        
+
         if (blueprint == null) {
             player.sendMessage("§cYou are not currently placing a blueprint!");
-            return;
-        }
-
-        if (blueprint.isPlotBased()) {
-            player.sendMessage("§cPlacement mode cannot be changed for plot-based blueprints!");
             return;
         }
 
@@ -140,9 +125,9 @@ public class BlueprintPlacementHandler {
         centerMode.put(playerId, newMode);
         selectedLocations.remove(playerId); // Reset selected location when changing modes
 
-        player.sendMessage(newMode ? 
-            "§aSwitched to center placement mode" : 
-            "§aSwitched to corner placement mode");
+        player.sendMessage(newMode ?
+                "§aSwitched to center placement mode" :
+                "§aSwitched to corner placement mode");
     }
 
     public boolean isCenterMode(Player player) {
@@ -198,90 +183,7 @@ public class BlueprintPlacementHandler {
         Blueprint blueprint = playerPlacements.get(playerId);
         if (blueprint == null) return;
 
-        if (blueprint.isPlotBased()) {
-            handlePlotSelection(player, location);
-        } else {
-            handleLocationSelection(player, location);
-        }
-    }
-
-    private void handlePlotSelection(Player player, Location location) {
-        UUID playerId = player.getUniqueId();
-        Blueprint blueprint = playerPlacements.get(playerId);
-        TownBlock townBlock = TownyAPI.getInstance().getTownBlock(location);
-        
-        if (townBlock == null) {
-            player.sendMessage("§cYou must select plots within your town!");
-            return;
-        }
-
-        try {
-            Town town = townBlock.getTown();
-            if (!town.equals(TownyAPI.getInstance().getResident(player).getTown())) {
-                player.sendMessage("§cYou can only select plots in your own town!");
-                return;
-            }
-
-            Set<TownBlock> plots = selectedPlots.computeIfAbsent(playerId, k -> new HashSet<>());
-
-            if (plots.contains(townBlock)) {
-                plots.remove(townBlock);
-                player.sendMessage("§aPlot deselected.");
-            } else {
-                // Check if the plot is already used by another blueprint
-                if (isPlotUsedByBlueprint(townBlock)) {
-                    player.sendMessage("§cThis plot is already used by another blueprint!");
-                    return;
-                }
-
-                // Check if adding this plot would exceed the required number
-                if (plots.size() >= blueprint.getRequiredPlots()) {
-                    player.sendMessage("§cYou have already selected the maximum number of plots!");
-                    return;
-                }
-
-                // If plots need to be connected, check connectivity
-                if (blueprint.getConnectsPlots() && !plots.isEmpty() && !isAdjacentToSelectedPlots(townBlock, plots)) {
-                    player.sendMessage("§cSelected plots must be connected!");
-                    return;
-                }
-
-                plots.add(townBlock);
-                player.sendMessage(String.format("§aPlot selected. (%d/%d)", 
-                    plots.size(), blueprint.getRequiredPlots()));
-            }
-
-            // Update visualization
-            placementVisualizer.updatePlotSelection(player, plots);
-        } catch (NotRegisteredException e) {
-            player.sendMessage("§cError selecting plot!");
-        }
-    }
-
-    private boolean isPlotUsedByBlueprint(TownBlock townBlock) {
-        // Check if any existing blueprint uses this plot
-        return plugin.getBlueprintManager().getAllPlacedBlueprints().stream()
-            .filter(bp -> bp.getBlueprint().isPlotBased())
-            .anyMatch(bp -> {
-                TownBlock bpBlock = TownyAPI.getInstance().getTownBlock(bp.getLocation());
-                return bpBlock != null && bpBlock.equals(townBlock);
-            });
-    }
-
-    private boolean isAdjacentToSelectedPlots(TownBlock townBlock, Set<TownBlock> selectedPlots) {
-        if (selectedPlots.isEmpty()) return true;
-
-        int x = townBlock.getX();
-        int z = townBlock.getZ();
-        World world = townBlock.getWorld().getBukkitWorld();
-
-        // Check adjacent plots (north, south, east, west)
-        return selectedPlots.stream().anyMatch(plot -> 
-            plot.getWorld().getBukkitWorld().equals(world) && (
-                (plot.getX() == x && Math.abs(plot.getZ() - z) == 1) ||
-                (plot.getZ() == z && Math.abs(plot.getX() - x) == 1)
-            )
-        );
+        handleLocationSelection(player, location);
     }
 
     private void handleLocationSelection(Player player, Location location) {
@@ -297,9 +199,9 @@ public class BlueprintPlacementHandler {
         // Adjust location based on placement mode
         if (centerMode.getOrDefault(playerId, false)) {
             location = location.clone().add(
-                -blueprint.getSizeX() / 2,
-                0,
-                -blueprint.getSizeZ() / 2
+                    -blueprint.getSizeX() / 2,
+                    0,
+                    -blueprint.getSizeZ() / 2
             );
         }
 
@@ -315,25 +217,17 @@ public class BlueprintPlacementHandler {
         Blueprint blueprint = playerPlacements.get(playerId);
         if (blueprint == null) return;
 
-        if (blueprint.isPlotBased()) {
-            // For plot-based blueprints, highlight the current plot
-            TownBlock townBlock = TownyAPI.getInstance().getTownBlock(location);
-            if (townBlock != null) {
-                placementVisualizer.updatePlotHighlight(player, townBlock);
-            }
-        } else {
             // Only update location if no location is selected yet
             if (!selectedLocations.containsKey(playerId)) {
                 if (centerMode.getOrDefault(playerId, false)) {
                     location = location.clone().add(
-                        -blueprint.getSizeX() / 2,
-                        0,
-                        -blueprint.getSizeZ() / 2
+                            -blueprint.getSizeX() / 2,
+                            0,
+                            -blueprint.getSizeZ() / 2
                     );
                 }
                 placementVisualizer.updateLocation(player, location);
             }
-        }
     }
 
     public void stopVisualization(Player player) {
@@ -345,27 +239,25 @@ public class BlueprintPlacementHandler {
     }
 
     private boolean isOverlappingExistingBlueprint(Location location, Blueprint newBlueprint) {
-        if (newBlueprint.isPlotBased()) return false; // Plot-based blueprints handle overlap differently
 
         BoundingBox newBox = new BoundingBox(
-            location.getX(), location.getY(), location.getZ(),
-            location.getX() + newBlueprint.getSizeX(),
-            location.getY() + newBlueprint.getSizeY(),
-            location.getZ() + newBlueprint.getSizeZ()
+                location.getX(), location.getY(), location.getZ(),
+                location.getX() + newBlueprint.getSizeX(),
+                location.getY() + newBlueprint.getSizeY(),
+                location.getZ() + newBlueprint.getSizeZ()
         );
 
         Town town = TownyAPI.getInstance().getTown(location);
         if (town == null) return false;
 
         for (PlacedBlueprint existing : plugin.getBlueprintManager().getPlacedBlueprintsForTown(town)) {
-            if (existing.getBlueprint().isPlotBased()) continue; // Skip plot-based blueprints
 
             Location existingLoc = existing.getLocation();
             BoundingBox existingBox = new BoundingBox(
-                existingLoc.getX(), existingLoc.getY(), existingLoc.getZ(),
-                existingLoc.getX() + existing.getBlueprint().getSizeX(),
-                existingLoc.getY() + existing.getBlueprint().getSizeY(),
-                existingLoc.getZ() + existing.getBlueprint().getSizeZ()
+                    existingLoc.getX(), existingLoc.getY(), existingLoc.getZ(),
+                    existingLoc.getX() + existing.getBlueprint().getSizeX(),
+                    existingLoc.getY() + existing.getBlueprint().getSizeY(),
+                    existingLoc.getZ() + existing.getBlueprint().getSizeZ()
             );
 
             if (newBox.overlaps(existingBox)) {
@@ -379,19 +271,15 @@ public class BlueprintPlacementHandler {
     public boolean handleRightClick(Player player) {
         UUID playerId = player.getUniqueId();
         Blueprint blueprint = playerPlacements.get(playerId);
-        
+
         if (blueprint == null) return false;
 
-        if (blueprint.isPlotBased()) {
-            return tryPlacePlotBlueprint(player);
-        } else {
             Location location = selectedLocations.get(playerId);
             if (location == null) {
                 player.sendMessage("§cPlease left-click to select a location first!");
                 return false;
             }
             return tryPlaceBlueprint(player, location);
-        }
     }
 
     private boolean tryPlacePlotBlueprint(Player player) {
@@ -404,19 +292,13 @@ public class BlueprintPlacementHandler {
             return false;
         }
 
-        if (plots.size() < blueprint.getRequiredPlots()) {
-            player.sendMessage(String.format("§cThis blueprint requires %d plots! You have only selected %d.", 
-                blueprint.getRequiredPlots(), plots.size()));
-            return false;
-        }
-
         // Get the center location of the first plot for the blueprint's location
         TownBlock firstPlot = plots.iterator().next();
         Location location = new Location(
-            firstPlot.getWorld().getBukkitWorld(),
-            firstPlot.getX() * 16 + 8,
-            64, // Default Y level
-            firstPlot.getZ() * 16 + 8
+                firstPlot.getWorld().getBukkitWorld(),
+                firstPlot.getX() * 16 + 8, // Center of the chunk
+                64, // Default Y level
+                firstPlot.getZ() * 16 + 8  // Center of the chunk
         );
 
         return tryPlaceBlueprint(player, location);
@@ -434,27 +316,23 @@ public class BlueprintPlacementHandler {
 
         try {
             if (!TownyAPI.getInstance().getResident(player).hasTown() ||
-                !TownyAPI.getInstance().getResident(player).getTown().equals(town)) {
+                    !TownyAPI.getInstance().getResident(player).getTown().equals(town)) {
                 player.sendMessage("§cYou don't have permission to place blueprints in this town!");
                 return false;
             }
 
-            if (!blueprint.isPlotBased() && !checkTownBoundaries(location, blueprint, town)) {
-                player.sendMessage("§cThe blueprint must be entirely within town boundaries!");
-                return false;
-            }
 
             PlacedBlueprint placedBlueprint = new PlacedBlueprint(
-                UUID.randomUUID().toString(),
-                blueprint,
-                town,
-                location,
-				false
+                    UUID.randomUUID().toString(),
+                    blueprint,
+                    town,
+                    location,
+                    false
             );
 
             String id = plugin.getBlueprintManager().createPlacedBlueprint(placedBlueprint);
             cancelPlacement(player);
-            
+
             player.sendMessage("§aBlueprint placed successfully!");
             return true;
         } catch (NotRegisteredException e) {
@@ -464,14 +342,13 @@ public class BlueprintPlacementHandler {
     }
 
     private boolean checkTownBoundaries(Location location, Blueprint blueprint, Town town) {
-        if (blueprint.isPlotBased()) return true; // Plot-based blueprints are always within boundaries
 
         World world = location.getWorld();
         if (world == null) return false;
 
         // Check points along all edges with a spacing of 16 blocks (size of a town block)
         int spacing = 16;
-        
+
         // Calculate number of points to check along each axis
         int pointsX = Math.max(2, (int) Math.ceil(blueprint.getSizeX() / (double) spacing) + 1);
         int pointsZ = Math.max(2, (int) Math.ceil(blueprint.getSizeZ() / (double) spacing) + 1);
@@ -526,9 +403,10 @@ public class BlueprintPlacementHandler {
             return false;
         }
     }
-	public void updateVisualization(Player player, PlacedBlueprint blueprint) {
+
+    public void updateVisualization(Player player, PlacedBlueprint blueprint) {
         UUID playerId = player.getUniqueId();
-        
+
         // Only update visualization if the player has visualization mode enabled
         if (visualizationMode.getOrDefault(playerId, false)) {
             if (blueprint.isActive()) {

@@ -4,6 +4,8 @@ import com.palmergames.bukkit.towny.TownyCommandAddonAPI;
 import com.palmergames.bukkit.towny.TownyCommandAddonAPI.CommandType;
 import com.townyblueprints.commands.BlueprintCommand;
 import com.townyblueprints.commands.BlueprintAdminCommand;
+import com.townyblueprints.db.Database;
+import com.townyblueprints.db.IStorage;
 import com.townyblueprints.handlers.BlueprintPlacementHandler;
 import com.townyblueprints.handlers.ResourceCollectionHandler;
 import com.townyblueprints.handlers.UpkeepHandler;
@@ -19,10 +21,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 @Getter
 public class TownyBlueprints extends JavaPlugin {
-    
+
     @Getter
     private static TownyBlueprints instance;
-    
+
     private ConfigManager configManager;
     private BlueprintManager blueprintManager;
     private GUIManager guiManager;
@@ -34,24 +36,29 @@ public class TownyBlueprints extends JavaPlugin {
     private UpkeepHandler upkeepHandler;
     private BlockDefinitionManager blockDefinitionManager;
     private ToolDefinitionManager toolDefinitionManager;
+    private IStorage database;
 
     @Override
     public void onEnable() {
         instance = this;
         printSickASCIIArt();
-        
+
+        // Initialize database first
+        this.database = new Database(this);
+        this.database.init();
+
         // Initialize managers and handlers
         this.configManager = new ConfigManager(this);
         this.blueprintManager = new BlueprintManager(this);
         this.guiManager = new GUIManager(this);
-        
+
         // Create visualizers first
         PlacementVisualizer placementVisualizer = new PlacementVisualizer(this);
         ExistingBlueprintVisualizer existingVisualizer = new ExistingBlueprintVisualizer(this);
-        
+
         // Then create BlueprintPlacementHandler with both visualizers
         this.placementHandler = new BlueprintPlacementHandler(this, placementVisualizer, existingVisualizer);
-        
+
         this.resourceCollectionHandler = new ResourceCollectionHandler(this);
         this.chatInputListener = new ChatInputListener(this);
         this.resourceTemplateManager = new ResourceTemplateManager(this);
@@ -66,7 +73,12 @@ public class TownyBlueprints extends JavaPlugin {
         this.resourceTemplateManager.loadTemplates();
         this.blockDefinitionManager.loadDefinitions();
         this.toolDefinitionManager.loadDefinitions();
-        
+
+        // Load placed blueprints from database
+        for (var blueprint : this.database.loadAllBlueprints()) {
+            this.blueprintManager.addLoadedBlueprint(blueprint);
+        }
+
         getServer().getScheduler().runTaskLater(this, () -> {
             warehouseManager.loadWarehouses();
         }, 20L);
@@ -74,7 +86,7 @@ public class TownyBlueprints extends JavaPlugin {
         // Register Towny commands
         BlueprintCommand blueprintCommand = new BlueprintCommand(this);
         BlueprintAdminCommand adminCommand = new BlueprintAdminCommand(this);
-        
+
         // Add town commands
         TownyCommandAddonAPI.addSubCommand(CommandType.TOWN, "blueprint", blueprintCommand);
         TownyCommandAddonAPI.addSubCommand(CommandType.TOWN, "bp", blueprintCommand);
@@ -107,6 +119,10 @@ public class TownyBlueprints extends JavaPlugin {
         }
 
         this.getLogger().info("TownyBlueprints has been disabled!");
+    }
+
+    public IStorage getDatabase() {
+        return database;
     }
 
     private void printSickASCIIArt() {

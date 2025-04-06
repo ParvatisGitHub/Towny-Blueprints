@@ -23,12 +23,49 @@ public class ExistingBlueprintVisualizer {
     private final double spacing;
     private final int frequency;
     private final int viewDistance;
+    private final Particle activeParticle;
+    private final Particle inactiveParticle;
+    private final Color inactiveColor;
+    private final float inactiveSize;
 
     public ExistingBlueprintVisualizer(TownyBlueprints plugin) {
         this.plugin = plugin;
         this.spacing = plugin.getConfig().getDouble("particles.spacing", 0.5);
         this.frequency = plugin.getConfig().getInt("particles.frequency", 10);
         this.viewDistance = plugin.getConfig().getInt("particles.view_distance", 50);
+
+        // Initialize particles with default values first
+        Particle tempActiveParticle = Particle.COMPOSTER;
+        Particle tempInactiveParticle = Particle.DUST;
+
+        // Get particle types from config
+        String activeParticleType = plugin.getConfig().getString("particles.active_type", "COMPOSTER");
+        String inactiveParticleType = plugin.getConfig().getString("particles.inactive_type", "DUST");
+
+        // Get dust particle color from config
+        int red = plugin.getConfig().getInt("particles.inactive_color.red", 255);
+        int green = plugin.getConfig().getInt("particles.inactive_color.green", 0);
+        int blue = plugin.getConfig().getInt("particles.inactive_color.blue", 0);
+        this.inactiveColor = Color.fromRGB(red, green, blue);
+        this.inactiveSize = (float) plugin.getConfig().getDouble("particles.inactive_size", 1.0);
+
+        // Try to set active particle
+        try {
+            tempActiveParticle = Particle.valueOf(activeParticleType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid active particle type in config: " + activeParticleType + ". Using COMPOSTER.");
+        }
+
+        // Try to set inactive particle
+        try {
+            tempInactiveParticle = Particle.valueOf(inactiveParticleType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid inactive particle type in config: " + inactiveParticleType + ". Using DUST.");
+        }
+
+        // Assign the final values
+        this.activeParticle = tempActiveParticle;
+        this.inactiveParticle = tempInactiveParticle;
     }
 
     public void startVisualization(Player player, PlacedBlueprint blueprint, boolean isDisabled) {
@@ -47,14 +84,8 @@ public class ExistingBlueprintVisualizer {
                 World world = base.getWorld();
                 if (world == null || !world.equals(player.getWorld())) return;
 
-                // Only show particles if player is within view distance
                 if (base.distance(player.getLocation()) > viewDistance) return;
-
-                if (blueprint.getBlueprint().isPlotBased()) {
-                    visualizePlot(world, base, isDisabled);
-                } else {
                     visualizeArea(world, base, blueprint, isDisabled);
-                }
             }
         };
 
@@ -67,9 +98,9 @@ public class ExistingBlueprintVisualizer {
         int sizeY = blueprint.getBlueprint().getSizeY();
         int sizeZ = blueprint.getBlueprint().getSizeZ();
 
-        Particle particle = isDisabled ? Particle.DUST : Particle.COMPOSTER;
-        Particle.DustOptions dustOptions = isDisabled ? 
-            new Particle.DustOptions(Color.RED, 1) : null;
+        Particle particle = isDisabled ? inactiveParticle : activeParticle;
+        Particle.DustOptions dustOptions = isDisabled && particle == Particle.DUST ?
+                new Particle.DustOptions(inactiveColor, inactiveSize) : null;
 
         // Draw vertical lines at corners
         for (double y = 0; y <= sizeY; y += spacing) {
@@ -95,46 +126,10 @@ public class ExistingBlueprintVisualizer {
         }
     }
 
-    private void visualizePlot(World world, Location base, boolean isDisabled) {
-        TownBlock plot = com.palmergames.bukkit.towny.TownyAPI.getInstance().getTownBlock(base);
-        if (plot == null) return;
-
-        int baseX = plot.getX() * 16;
-        int baseZ = plot.getZ() * 16;
-        int height = 3;
-
-        Particle particle = isDisabled ? Particle.DUST : Particle.COMPOSTER;
-        Particle.DustOptions dustOptions = isDisabled ? 
-            new Particle.DustOptions(Color.RED, 1) : null;
-
-        // Draw vertical lines at corners
-        for (double y = 0; y <= height; y += spacing) {
-            spawnParticle(world, new Location(world, baseX, 64 + y, baseZ), particle, dustOptions);
-            spawnParticle(world, new Location(world, baseX + 16, 64 + y, baseZ), particle, dustOptions);
-            spawnParticle(world, new Location(world, baseX, 64 + y, baseZ + 16), particle, dustOptions);
-            spawnParticle(world, new Location(world, baseX + 16, 64 + y, baseZ + 16), particle, dustOptions);
-        }
-
-        // Draw horizontal lines
-        for (double x = 0; x <= 16; x += spacing) {
-            spawnParticle(world, new Location(world, baseX + x, 64, baseZ), particle, dustOptions);
-            spawnParticle(world, new Location(world, baseX + x, 64, baseZ + 16), particle, dustOptions);
-            spawnParticle(world, new Location(world, baseX + x, 64 + height, baseZ), particle, dustOptions);
-            spawnParticle(world, new Location(world, baseX + x, 64 + height, baseZ + 16), particle, dustOptions);
-        }
-
-        for (double z = 0; z <= 16; z += spacing) {
-            spawnParticle(world, new Location(world, baseX, 64, baseZ + z), particle, dustOptions);
-            spawnParticle(world, new Location(world, baseX + 16, 64, baseZ + z), particle, dustOptions);
-            spawnParticle(world, new Location(world, baseX, 64 + height, baseZ + z), particle, dustOptions);
-            spawnParticle(world, new Location(world, baseX + 16, 64 + height, baseZ + z), particle, dustOptions);
-        }
-    }
-
     public void stopVisualization(Player player) {
         UUID playerId = player.getUniqueId();
         activeVisualizations.remove(playerId);
-        
+
         List<BukkitRunnable> tasks = visualizationTasks.remove(playerId);
         if (tasks != null) {
             tasks.forEach(BukkitRunnable::cancel);

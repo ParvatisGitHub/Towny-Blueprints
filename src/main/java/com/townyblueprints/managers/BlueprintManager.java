@@ -1,22 +1,14 @@
 package com.townyblueprints.managers;
 
-import com.palmergames.bukkit.towny.TownyMessaging;
-import com.palmergames.bukkit.towny.TownyUniverse;
-import com.palmergames.bukkit.towny.exceptions.TownyException;
-import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import com.palmergames.bukkit.towny.object.Translatable;
-import com.palmergames.bukkit.towny.permissions.PermissionNodes;
-import com.palmergames.util.MathUtil;
 import com.townyblueprints.TownyBlueprints;
 import com.townyblueprints.models.Blueprint;
 import com.townyblueprints.models.PlacedBlueprint;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -27,26 +19,18 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.palmergames.bukkit.towny.command.BaseCommand.checkPermOrThrow;
-
 @RequiredArgsConstructor
 public class BlueprintManager {
     private final TownyBlueprints plugin;
     private final Map<String, Blueprint> blueprints = new HashMap<>();
     private final Map<String, PlacedBlueprint> placedBlueprints = new HashMap<>();
     private final Map<Town, Map<String, Integer>> pendingResources = new HashMap<>();
+    @Getter
     private final Map<String, Boolean> bonusBlockContributions = new HashMap<>();
 
     public void loadAll() {
         loadBlueprintsFromFolder(new File(plugin.getDataFolder(), "blueprints"));
         loadBlueprintsFromFolder(plugin.getDataFolder());
-
-        File dataFile = new File(plugin.getDataFolder(), "data.yml");
-        if (dataFile.exists()) {
-            YamlConfiguration data = YamlConfiguration.loadConfiguration(dataFile);
-            loadPlacedBlueprints(data.getConfigurationSection("placed_blueprints"));
-            loadPendingResources(data.getConfigurationSection("pending_resources"));
-        }
     }
 
     private void loadBlueprintsFromFolder(File folder) {
@@ -67,19 +51,13 @@ public class BlueprintManager {
             blueprint.setName(name);
             blueprint.setDescription(config.getString("description", ""));
             blueprint.setType(config.getString("type", "default"));
-            blueprint.setBlueprintType(config.getString("blueprint_type", "area"));
 
-            if (blueprint.isPlotBased()) {
-                blueprint.setRequiredPlots(config.getInt("required_plots", 1));
-                blueprint.setConnectsPlots(config.getBoolean("connects_plots", false));
-            } else {
-                ConfigurationSection sizeSection = config.getConfigurationSection("size");
+            ConfigurationSection sizeSection = config.getConfigurationSection("size");
                 if (sizeSection != null) {
                     blueprint.setSizeX(sizeSection.getInt("x", 1));
                     blueprint.setSizeY(sizeSection.getInt("y", 1));
                     blueprint.setSizeZ(sizeSection.getInt("z", 1));
                 }
-            }
 
             blueprint.setDailyIncome(config.getDouble("daily_income", 0.0));
             blueprint.setIncomeType(config.getString("income_type", "MONEY"));
@@ -113,7 +91,6 @@ public class BlueprintManager {
                 }
             }
 
-            // Handle required blocks section
             Map<String, Integer> requiredBlocks = new HashMap<>();
             ConfigurationSection blocksSection = config.getConfigurationSection("required_blocks");
             if (blocksSection != null) {
@@ -129,6 +106,7 @@ public class BlueprintManager {
     }
 
     public void saveBlueprint(Blueprint blueprint) {
+        // Save to file system
         String fileName = blueprint.getName().toLowerCase().replace(" ", "_") + ".yml";
         File blueprintsFolder = new File(plugin.getDataFolder(), "blueprints");
         if (!blueprintsFolder.exists()) {
@@ -141,16 +119,9 @@ public class BlueprintManager {
         config.set("name", blueprint.getName());
         config.set("description", blueprint.getDescription());
         config.set("type", blueprint.getType());
-        config.set("blueprint_type", blueprint.getBlueprintType());
-
-        if (blueprint.isPlotBased()) {
-            config.set("required_plots", blueprint.getRequiredPlots());
-            config.set("connects_plots", blueprint.getConnectsPlots());
-        } else {
-            config.set("size.x", blueprint.getSizeX());
-            config.set("size.y", blueprint.getSizeY());
-            config.set("size.z", blueprint.getSizeZ());
-        }
+        config.set("size.x", blueprint.getSizeX());
+        config.set("size.y", blueprint.getSizeY());
+        config.set("size.z", blueprint.getSizeZ());
 
         config.set("daily_income", blueprint.getDailyIncome());
         config.set("income_type", blueprint.getIncomeType());
@@ -169,7 +140,6 @@ public class BlueprintManager {
             config.set("durability_drain", blueprint.getDurabilityDrain());
         }
 
-        // Save required blocks
         for (Map.Entry<String, Integer> entry : blueprint.getRequiredBlocks().entrySet()) {
             config.set("required_blocks." + entry.getKey(), entry.getValue());
         }
@@ -228,16 +198,9 @@ public class BlueprintManager {
             config.set("name", blueprint.getName());
             config.set("description", blueprint.getDescription());
             config.set("type", blueprint.getType());
-            config.set("blueprint_type", blueprint.getBlueprintType());
-
-            if (blueprint.isPlotBased()) {
-                config.set("required_plots", blueprint.getRequiredPlots());
-                config.set("connects_plots", blueprint.getConnectsPlots());
-            } else {
-                config.set("size.x", blueprint.getSizeX());
-                config.set("size.y", blueprint.getSizeY());
-                config.set("size.z", blueprint.getSizeZ());
-            }
+            config.set("size.x", blueprint.getSizeX());
+            config.set("size.y", blueprint.getSizeY());
+            config.set("size.z", blueprint.getSizeZ());
 
             config.set("daily_income", blueprint.getDailyIncome());
             config.set("income_type", blueprint.getIncomeType());
@@ -256,7 +219,6 @@ public class BlueprintManager {
                 config.set("durability_drain", blueprint.getDurabilityDrain());
             }
 
-            // Save required blocks
             for (Map.Entry<String, Integer> entry : blueprint.getRequiredBlocks().entrySet()) {
                 config.set("required_blocks." + entry.getKey(), entry.getValue());
             }
@@ -281,81 +243,6 @@ public class BlueprintManager {
 
         if (blueprintFile.exists() && blueprintFile.delete()) {
             plugin.getLogger().info("Deleted blueprint: " + name);
-        }
-    }
-
-    private void loadPlacedBlueprints(ConfigurationSection section) {
-        if (section == null) {
-            plugin.getLogger().warning("No placed blueprints section found in the config file.");
-            return;
-        }
-
-        for (String id : section.getKeys(false)) {
-            ConfigurationSection bpSection = section.getConfigurationSection(id);
-            if (bpSection == null) continue;
-
-            String blueprintName = bpSection.getString("blueprint");
-            String townName = bpSection.getString("town");
-
-            if (blueprintName == null || townName == null) {
-                plugin.getLogger().warning("Missing blueprint or town for ID: " + id);
-                continue;
-            }
-
-            Blueprint blueprint = getBlueprint(blueprintName);
-            Town town = plugin.getServer().getPluginManager().getPlugin("Towny") != null ?
-                    com.palmergames.bukkit.towny.TownyAPI.getInstance().getTown(townName) : null;
-
-            if (blueprint == null) {
-                plugin.getLogger().warning("Blueprint " + blueprintName + " not found for ID: " + id);
-                continue;
-            }
-
-            if (town == null) {
-                plugin.getLogger().warning("Town " + townName + " not found for ID: " + id);
-                continue;
-            }
-
-            World world = plugin.getServer().getWorld(bpSection.getString("location.world"));
-            if (world == null) {
-                plugin.getLogger().warning("World not found for placed blueprint ID: " + id);
-                continue;
-            }
-
-            double x = bpSection.getDouble("location.x");
-            double y = bpSection.getDouble("location.y");
-            double z = bpSection.getDouble("location.z");
-            Location location = new Location(world, x, y, z);
-
-            PlacedBlueprint placedBlueprint = new PlacedBlueprint(id, blueprint, town, location, false);
-            placedBlueprint.setActive(bpSection.getBoolean("active", false));
-            placedBlueprint.setLastCollectionTime(bpSection.getLong("last_collection", System.currentTimeMillis()));
-
-            // Load bonus block contribution state
-            bonusBlockContributions.put(id, bpSection.getBoolean("contributing_bonus_blocks", placedBlueprint.isActive()));
-
-            placedBlueprints.put(id, placedBlueprint);
-            plugin.getLogger().info("Loaded placed blueprint with ID: " + id);
-        }
-    }
-
-    private void loadPendingResources(ConfigurationSection section) {
-        if (section == null) return;
-
-        for (String townName : section.getKeys(false)) {
-            Town town = plugin.getServer().getPluginManager().getPlugin("Towny") != null ?
-                    com.palmergames.bukkit.towny.TownyAPI.getInstance().getTown(townName) : null;
-
-            if (town != null) {
-                ConfigurationSection resourceSection = section.getConfigurationSection(townName);
-                if (resourceSection != null) {
-                    Map<String, Integer> resources = new HashMap<>();
-                    for (String resource : resourceSection.getKeys(false)) {
-                        resources.put(resource, resourceSection.getInt(resource));
-                    }
-                    pendingResources.put(town, resources);
-                }
-            }
         }
     }
 
@@ -384,14 +271,13 @@ public class BlueprintManager {
     public String createPlacedBlueprint(PlacedBlueprint blueprint) {
         String id = blueprint.getId();
         placedBlueprints.put(id, blueprint);
-        saveAll();
+        plugin.getDatabase().saveBlueprint(blueprint);
         return id;
     }
 
     public void removePlacedBlueprint(String id) {
         PlacedBlueprint blueprint = placedBlueprints.get(id);
         if (blueprint != null) {
-            // If the blueprint was active and contributing bonus blocks, update the town
             if (blueprint.isActive() && bonusBlockContributions.getOrDefault(id, false)) {
                 Town town = blueprint.getTown();
                 int currentBonus = town.getBonusBlocks();
@@ -400,14 +286,18 @@ public class BlueprintManager {
 
             bonusBlockContributions.remove(id);
             placedBlueprints.remove(id);
-            saveAll();
+            plugin.getDatabase().deleteBlueprint(id);
             plugin.getLogger().info("Blueprint with ID " + id + " has been removed.");
         } else {
             plugin.getLogger().warning("No placed blueprint found with ID " + id);
         }
     }
 
-    // Add this method to reset contribution tracking
+    public void addLoadedBlueprint(PlacedBlueprint blueprint) {
+        placedBlueprints.put(blueprint.getId(), blueprint);
+        bonusBlockContributions.put(blueprint.getId(), blueprint.isActive());
+    }
+
     public void resetBonusBlockTracking() {
         bonusBlockContributions.clear();
     }
@@ -429,8 +319,8 @@ public class BlueprintManager {
     public void updateTownBonusBlocks(Town town, int currentBonusBlocks) {
         int calculatedBonusBlocks = calculateTownBonusBlocks(town);
         int inactiveBonusBlocks = calculateInactiveBonusBlocks(town);
-        int currentBonus = town.getBonusBlocks();
         boolean hasChanges = false;
+
         for (PlacedBlueprint blueprint : getPlacedBlueprintsForTown(town)) {
             String blueprintId = blueprint.getId();
             boolean isCurrentlyActive = blueprint.isActive();
@@ -443,9 +333,13 @@ public class BlueprintManager {
         }
 
         if (hasChanges) {
-            town.setBonusBlocks(town.getBonusBlocks() - inactiveBonusBlocks + calculatedBonusBlocks);  // Add calculated bonus
+            town.setBonusBlocks(town.getBonusBlocks() - inactiveBonusBlocks + calculatedBonusBlocks);
             try {
                 town.save();
+                // Save to database
+                for (PlacedBlueprint blueprint : getPlacedBlueprintsForTown(town)) {
+                    plugin.getDatabase().saveBlueprint(blueprint);
+                }
             } catch (Exception e) {
                 plugin.getLogger().warning("Failed to save town after updating bonus blocks: " + e.getMessage());
             }
@@ -472,38 +366,13 @@ public class BlueprintManager {
         return pendingResources.getOrDefault(town, new HashMap<>());
     }
 
+    /**
+     * Saves all placed blueprints to the database
+     */
     public void saveAll() {
-        YamlConfiguration data = new YamlConfiguration();
-
-        ConfigurationSection placedSection = data.createSection("placed_blueprints");
-        for (Map.Entry<String, PlacedBlueprint> entry : placedBlueprints.entrySet()) {
-            ConfigurationSection bpSection = placedSection.createSection(entry.getKey());
-            PlacedBlueprint placed = entry.getValue();
-
-            bpSection.set("blueprint", placed.getBlueprint().getName());
-            bpSection.set("town", placed.getTown().getName());
-            bpSection.set("location.world", placed.getLocation().getWorld().getName());
-            bpSection.set("location.x", placed.getLocation().getX());
-            bpSection.set("location.y", placed.getLocation().getY());
-            bpSection.set("location.z", placed.getLocation().getZ());
-            bpSection.set("active", placed.isActive());
-            bpSection.set("last_collection", placed.getLastCollectionTime());
-            bpSection.set("contributing_bonus_blocks", bonusBlockContributions.getOrDefault(entry.getKey(), placed.isActive()));
+        for (PlacedBlueprint blueprint : placedBlueprints.values()) {
+            plugin.getDatabase().saveBlueprint(blueprint);
         }
-
-        ConfigurationSection resourcesSection = data.createSection("pending_resources");
-        for (Map.Entry<Town, Map<String, Integer>> entry : pendingResources.entrySet()) {
-            ConfigurationSection townSection = resourcesSection.createSection(entry.getKey().getName());
-            for (Map.Entry<String, Integer> resource : entry.getValue().entrySet()) {
-                townSection.set(resource.getKey(), resource.getValue());
-            }
-        }
-
-        try {
-            data.save(new File(plugin.getDataFolder(), "data.yml"));
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save plugin data!");
-            e.printStackTrace();
-        }
+        plugin.getLogger().info("Saved all blueprints to database");
     }
 }

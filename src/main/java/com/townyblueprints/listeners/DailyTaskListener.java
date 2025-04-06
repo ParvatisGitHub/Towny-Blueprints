@@ -34,6 +34,11 @@ public class DailyTaskListener implements Listener {
         }
 
         try {
+            // Refresh warehouse data first
+            plugin.getLogger().info("Refreshing warehouse data...");
+            plugin.getWarehouseManager().loadWarehouses();
+            plugin.getLogger().info("Warehouse data refresh complete");
+
             List<PlacedBlueprint> blueprints = new ArrayList<>(plugin.getBlueprintManager().getAllPlacedBlueprints());
 
             // Group blueprints by town for combined messages
@@ -79,6 +84,7 @@ public class DailyTaskListener implements Listener {
         }
     }
 
+    // Rest of the class remains unchanged
     private void processUpkeepAndCollectTotals(PlacedBlueprint blueprint, Map<String, Integer> totalUpkeep, Map<String, Integer> toolUpkeep) {
         try {
             String upkeepType = blueprint.getBlueprint().getUpkeepType();

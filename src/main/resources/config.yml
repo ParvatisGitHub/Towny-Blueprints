@@ -9,11 +9,11 @@ economy:
     allow_per_resource_rates: true
     # Default rate if Towny's tax rate is not available
     default_rate: 10
-  
+
   # Minimum and maximum values for blueprint costs
   min_placement_cost: 0
   max_placement_cost: 1000000
-  
+
   # Resource collection settings
   collection:
     # Cooldown in minutes between collections
@@ -95,6 +95,21 @@ blueprints:
       2: 2  # Level 2 towns can have 2 warehouses
       3: 3  # Level 3 towns can have 3 warehouses
 
+  # Default settings for blueprint types
+  type_settings:
+    farm:
+      required_count: 3
+      shared_upkeep: true
+      upkeep_multiplier: 0.8
+    mine:
+      required_count: 2
+      shared_upkeep: false
+      upkeep_multiplier: 1.2
+    warehouse:
+      required_count: 1
+      shared_upkeep: false
+      upkeep_multiplier: 1.0
+
 # Maximum number of blueprints allowed per town level
 # Use -1 for unlimited
 max_blueprints_per_level:
@@ -106,8 +121,12 @@ max_blueprints_per_level:
 
 # Particle settings
 particles:
-  # Type of particle to use for blueprint visualization
-  type: COMPOSTER
+  # Type of particle to use for active blueprint visualization
+  active_type: COMPOSTER
+  # Type of particle to use for inactive blueprint visualization
+  inactive_type: DUST
+  # Type of particle to use for blueprint placement
+  placement_type: COMPOSTER
   # Number of particles to spawn per point
   count: 1
   # Particle spawn frequency in ticks (20 ticks = 1 second)
@@ -116,6 +135,13 @@ particles:
   spacing: 0.5
   # Maximum distance to render particles (in blocks)
   view_distance: 50
+  # Color settings for inactive (DUST) particles
+  inactive_color:
+    red: 255
+    green: 0
+    blue: 0
+  # Size of inactive particles (DUST only)
+  inactive_size: 1.0
 
 # Messages
 messages:
@@ -127,3 +153,7 @@ messages:
   not_town_member: "&cYou must be a member of this town to do that!"
   collection_cooldown: "&cYou must wait %time% minutes before collecting again!"
   collection_success: "&aResources collected successfully!"
+  blueprint_group:
+    incomplete: "&eThis blueprint requires %count% more of the same type to function optimally!"
+    complete: "&aAll required blueprints of this type are present! Operating at optimal efficiency."
+    shared_upkeep: "&aUpkeep costs are being shared between %count% blueprints."
