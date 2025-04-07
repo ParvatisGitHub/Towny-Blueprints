@@ -1,7 +1,6 @@
 package com.townyblueprints.models;
 
 import lombok.Data;
-import lombok.Getter;
 import org.bukkit.Material;
 import java.util.Map;
 import java.util.HashMap;
@@ -12,21 +11,7 @@ import java.util.HashSet;
 public class Blueprint {
     private String name = "New Blueprint";
     private String description = "";
-    /**
-     * -- GETTER --
-     *  Gets the required blocks map where:
-     *  - Keys are either Material names or block definition names (e.g., "OAK_LOG" or "logs")
-     *  - Values are the required quantities
-     */
-    @Getter
     private Map<String, Integer> requiredBlocks = new HashMap<>();
-    /**
-     * -- GETTER --
-     *  Gets the required mobs map where:
-     *  - Keys are entity type names (e.g., "VILLAGER", "COW")
-     *  - Values are the required quantities
-     */
-    @Getter
     private Map<String, Integer> requiredMobs = new HashMap<>();
     private Set<String> requiredBiomes = new HashSet<>(); // New field for required biomes
     private Set<String> forbiddenBiomes = new HashSet<>(); // New field for forbidden biomes
@@ -54,6 +39,21 @@ public class Blueprint {
     private boolean sharedUpkeep = false;
     private double upkeepMultiplier = 1.0;
 
+    public void setName(String name) {
+        this.name = name;
+        // Automatically set permission node when name is set
+        this.permissionNode = "townyblueprints.blueprint." + name.toLowerCase().replace(" ", "_");
+    }
+
+    /**
+     * Gets the required blocks map where:
+     * - Keys are either Material names or block definition names (e.g., "OAK_LOG" or "logs")
+     * - Values are the required quantities
+     */
+    public Map<String, Integer> getRequiredBlocks() {
+        return requiredBlocks;
+    }
+
     /**
      * Sets the required blocks map where:
      * - Keys are either Material names or block definition names (e.g., "OAK_LOG" or "logs")
@@ -77,11 +77,14 @@ public class Blueprint {
     /**
      * Removes a required block from the blueprint
      * @param blockType Material name or block definition name
+     * @return true if the block was removed, false if it didn't exist
      */
-    public void removeRequiredBlock(String blockType) {
-        if (blockType != null) {
+    public boolean removeRequiredBlock(String blockType) {
+        if (blockType != null && this.requiredBlocks.containsKey(blockType)) {
             this.requiredBlocks.remove(blockType);
+            return true;
         }
+        return false;
     }
 
     /**
@@ -100,6 +103,15 @@ public class Blueprint {
      */
     public boolean requiresBlock(String blockType) {
         return blockType != null && this.requiredBlocks.containsKey(blockType);
+    }
+
+    /**
+     * Gets the required mobs map where:
+     * - Keys are entity type names (e.g., "VILLAGER", "COW")
+     * - Values are the required quantities
+     */
+    public Map<String, Integer> getRequiredMobs() {
+        return requiredMobs;
     }
 
     /**
@@ -124,11 +136,14 @@ public class Blueprint {
     /**
      * Removes a required mob from the blueprint
      * @param entityType Entity type name
+     * @return true if the mob was removed, false if it didn't exist
      */
-    public void removeRequiredMob(String entityType) {
-        if (entityType != null) {
+    public boolean removeRequiredMob(String entityType) {
+        if (entityType != null && this.requiredMobs.containsKey(entityType.toUpperCase())) {
             this.requiredMobs.remove(entityType.toUpperCase());
+            return true;
         }
+        return false;
     }
 
     /**
@@ -162,11 +177,14 @@ public class Blueprint {
     /**
      * Removes a required biome from the blueprint
      * @param biome Biome name
+     * @return true if the biome was removed, false if it didn't exist
      */
-    public void removeRequiredBiome(String biome) {
-        if (biome != null) {
+    public boolean removeRequiredBiome(String biome) {
+        if (biome != null && this.requiredBiomes.contains(biome.toUpperCase())) {
             this.requiredBiomes.remove(biome.toUpperCase());
+            return true;
         }
+        return false;
     }
 
     /**
@@ -182,11 +200,14 @@ public class Blueprint {
     /**
      * Removes a forbidden biome from the blueprint
      * @param biome Biome name
+     * @return true if the biome was removed, false if it didn't exist
      */
-    public void removeForbiddenBiome(String biome) {
-        if (biome != null) {
+    public boolean removeForbiddenBiome(String biome) {
+        if (biome != null && this.forbiddenBiomes.contains(biome.toUpperCase())) {
             this.forbiddenBiomes.remove(biome.toUpperCase());
+            return true;
         }
+        return false;
     }
 
     /**
