@@ -6,7 +6,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.dynmap.markers.MarkerAPI;
 import org.dynmap.markers.MarkerSet;
-import org.dynmap.markers.AreaMarker;
+import org.dynmap.markers.Marker;
+import org.dynmap.markers.MarkerIcon;
 import org.dynmap.towny.events.BuildTownMarkerDescriptionEvent;
 import org.dynmap.towny.events.TownSetMarkerIconEvent;
 
@@ -18,12 +19,12 @@ public class DynmapListener implements Listener {
     private final TownyBlueprints plugin;
     private final MarkerAPI markerAPI;
     private final MarkerSet markerSet;
-    private final Map<String, AreaMarker> blueprintMarkers = new HashMap<>();
+    private final Map<String, Marker> blueprintMarkers = new HashMap<>();
 
     public DynmapListener(TownyBlueprints plugin, MarkerAPI markerAPI) {
         this.plugin = plugin;
         this.markerAPI = markerAPI;
-        
+
         // Create or get our marker set
         MarkerSet existingSet = markerAPI.getMarkerSet("townyblueprints.markerset");
         if (existingSet == null) {
@@ -31,56 +32,63 @@ public class DynmapListener implements Listener {
         } else {
             this.markerSet = existingSet;
         }
-        
+
         // Load existing blueprints
         updateAllBlueprints();
     }
 
     @EventHandler
     public void onBuildTownDescription(BuildTownMarkerDescriptionEvent event) {
+        // Get blueprints for the specific town
         Collection<PlacedBlueprint> blueprints = plugin.getBlueprintManager().getPlacedBlueprintsForTown(event.getTown());
+
         if (!blueprints.isEmpty()) {
             StringBuilder description = new StringBuilder(event.getDescription());
             description.append("\n<br/>Active Blueprints:");
-            
+
             double totalIncome = 0;
             for (PlacedBlueprint blueprint : blueprints) {
                 if (blueprint.isActive()) {
                     description.append("\n<br/>- ").append(blueprint.getBlueprint().getName());
-                    if (blueprint.getBlueprint().getDailyIncome() > 0) {
-                        description.append(" (").append(blueprint.getBlueprint().getDailyIncome())
-                            .append(" ").append(blueprint.getBlueprint().getIncomeType()).append("/day)");
-                        if (blueprint.getBlueprint().getIncomeType().equals("MONEY")) {
-                            totalIncome += blueprint.getBlueprint().getDailyIncome();
+                    double dailyIncome = blueprint.getBlueprint().getDailyIncome();
+                    if (dailyIncome > 0) {
+                        description.append(" (").append(dailyIncome).append(" ")
+                                .append(blueprint.getBlueprint().getIncomeType()).append("/day)");
+
+                        if ("MONEY".equals(blueprint.getBlueprint().getIncomeType())) {
+                            totalIncome += dailyIncome;
                         }
                     }
                 }
             }
-            
+
             if (totalIncome > 0) {
                 description.append("\n<br/>Total Daily Income: ").append(totalIncome).append(" coins");
             }
-            
+
             event.setDescription(description.toString());
         }
     }
 
     @EventHandler
     public void onTownSetMarkerIcon(TownSetMarkerIconEvent event) {
-        // You can customize the marker icon based on the blueprints in the town
+        // Customize the icon for the town based on the blueprints
         Collection<PlacedBlueprint> blueprints = plugin.getBlueprintManager().getPlacedBlueprintsForTown(event.getTown());
-        // Example: Change icon if town has a specific type of blueprint
+
+        // Example: change icon if town has a specific blueprint type
         for (PlacedBlueprint blueprint : blueprints) {
             if (blueprint.isActive() && blueprint.getBlueprint().getType().equals("government")) {
-                event.setIcon(markerAPI.getMarkerIcon(plugin.getConfig().getString("dynmap.icons.government", "tower")));
-                break;
+                // Set a custom icon for the town based on blueprint type
+                MarkerIcon icon = markerAPI.getMarkerIcon(plugin.getConfig().getString("dynmap.icons.government", "tower"));
+                event.setIcon(icon);
+                break; // Only change the icon once based on blueprint type
             }
         }
     }
 
     public void updateAllBlueprints() {
         // Clear existing markers
-        for (AreaMarker marker : blueprintMarkers.values()) {
+        for (Marker marker : blueprintMarkers.values()) {
             marker.deleteMarker();
         }
         blueprintMarkers.clear();
@@ -94,67 +102,53 @@ public class DynmapListener implements Listener {
     }
 
     public void addBlueprintMarker(PlacedBlueprint blueprint) {
-        // Create corner points for the area
-        double[] x = new double[4];
-        double[] z = new double[4];
-        
-        // Get blueprint location and dimensions
-        int bx = blueprint.getLocation().getBlockX();
-        int bz = blueprint.getLocation().getBlockZ();
-        int sizeX = blueprint.getBlueprint().getSizeX();
-        int sizeZ = blueprint.getBlueprint().getSizeZ();
-        
-        // Set corner points
-        x[0] = bx; z[0] = bz;
-        x[1] = bx + sizeX; z[1] = bz;
-        x[2] = bx + sizeX; z[2] = bz + sizeZ;
-        x[3] = bx; z[3] = bz + sizeZ;
-        
+        // Get blueprint location
+        double x = blueprint.getLocation().getBlockX();
+        double y = blueprint.getLocation().getBlockY(); // Added y coordinate for vertical placement (important for markers)
+        double z = blueprint.getLocation().getBlockZ();
+
         // Create or update marker
         String markerId = "blueprint_" + blueprint.getId();
-        AreaMarker marker = blueprintMarkers.get(markerId);
-        
+        Marker marker = blueprintMarkers.get(markerId);
+
         if (marker == null) {
-            marker = markerSet.createAreaMarker(markerId, 
-                blueprint.getBlueprint().getName(), 
-                true, 
-                blueprint.getLocation().getWorld().getName(), 
-                x, z, 
-                false);
+            MarkerIcon icon = markerAPI.getMarkerIcon(plugin.getConfig().getString("dynmap.icons." + blueprint.getBlueprint().getType(), "default"));
+
+            // Correct createMarker method signature with all necessary parameters
+            marker = markerSet.createMarker(
+                    markerId,
+                    blueprint.getBlueprint().getName(),
+                    blueprint.getLocation().getWorld().getName(),  // World name
+                    x, y, z,  // Coordinates (x, y, z) for the point marker
+                    icon,      // MarkerIcon
+                    true       // Is the marker persistent? (true means it won't be removed on reload)
+            );
             blueprintMarkers.put(markerId, marker);
         } else {
-            marker.setCornerLocations(x, z);
+            // Updating the location correctly with world name and coordinates
+            marker.setLocation(blueprint.getLocation().getWorld().getName(), x, y, z);
         }
-        
-        // Set marker style
-        String markerIcon = plugin.getConfig().getString("dynmap.icons." + blueprint.getBlueprint().getType(), "default");
-        String strokeColor = plugin.getConfig().getString("dynmap.colors." + blueprint.getBlueprint().getType() + ".stroke", "#FF0000");
-        String fillColor = plugin.getConfig().getString("dynmap.colors." + blueprint.getBlueprint().getType() + ".fill", "#FF0000");
-        double opacity = plugin.getConfig().getDouble("dynmap.colors." + blueprint.getBlueprint().getType() + ".opacity", 0.3);
-        
-        marker.setLineStyle(3, 1.0, Integer.parseInt(strokeColor.substring(1), 16));
-        marker.setFillStyle(opacity, Integer.parseInt(fillColor.substring(1), 16));
-        
-        // Set description
+
+        // Set marker description with blueprint information
         String description = String.format("<div class=\"blueprint-info\">" +
-            "<h3>%s</h3>" +
-            "<p>Type: %s</p>" +
-            "<p>Income: %s %s/day</p>" +
-            "<p>Upkeep: %s %s/day</p>" +
-            "</div>",
-            blueprint.getBlueprint().getName(),
-            blueprint.getBlueprint().getType(),
-            blueprint.getBlueprint().getDailyIncome(),
-            blueprint.getBlueprint().getIncomeType(),
-            blueprint.getBlueprint().getDailyUpkeep(),
-            blueprint.getBlueprint().getUpkeepType());
-        
+                        "<h3>%s</h3>" +
+                        "<p>Type: %s</p>" +
+                        "<p>Income: %s %s/day</p>" +
+                        "<p>Upkeep: %s %s/day</p>" +
+                        "</div>",
+                blueprint.getBlueprint().getName(),
+                blueprint.getBlueprint().getType(),
+                blueprint.getBlueprint().getDailyIncome(),
+                blueprint.getBlueprint().getIncomeType(),
+                blueprint.getBlueprint().getDailyUpkeep(),
+                blueprint.getBlueprint().getUpkeepType());
+
         marker.setDescription(description);
     }
 
     public void removeBlueprintMarker(String blueprintId) {
         String markerId = "blueprint_" + blueprintId;
-        AreaMarker marker = blueprintMarkers.remove(markerId);
+        Marker marker = blueprintMarkers.remove(markerId);
         if (marker != null) {
             marker.deleteMarker();
         }
