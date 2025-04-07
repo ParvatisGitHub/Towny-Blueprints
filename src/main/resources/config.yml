@@ -158,5 +158,39 @@ messages:
     complete: "&aAll required blueprints of this type are present! Operating at optimal efficiency."
     shared_upkeep: "&aUpkeep costs are being shared between %count% blueprints."
 
+# Dynmap Integration Settings
+dynmap:
+  # Icon settings for different blueprint types
+  icons:
+    government: "tower"
+    farm: "farm"
+    mine: "pickaxe"
+    lumberyard: "axe"
+    default: "default"
+  
+  # Color settings for different blueprint types
+  colors:
+    government:
+      stroke: "#FF0000"
+      fill: "#FF0000"
+      opacity: 0.3
+    farm:
+      stroke: "#00FF00"
+      fill: "#00FF00"
+      opacity: 0.3
+    mine:
+      stroke: "#0000FF"
+      fill: "#0000FF"
+      opacity: 0.3
+    lumberyard:
+      stroke: "#FFFF00"
+      fill: "#FFFF00"
+      opacity: 0.3
+    default:
+      stroke: "#FFFFFF"
+      fill: "#FFFFFF"
+      opacity: 0.3
+
+
 #debug mode toggle enabling console logs for plugin activities
 debugMode: false
