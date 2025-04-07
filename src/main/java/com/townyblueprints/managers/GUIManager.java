@@ -66,53 +66,45 @@ public class GUIManager {
 
     public void openCreateMenu(Player player) {
         Inventory inventory = Bukkit.createInventory(null, CREATE_MENU_SIZE, CREATE_MENU_TITLE);
+        Blueprint blueprint = blueprintCreation.get(player);
 
-        // Basic Settings Section
-        inventory.setItem(10, createMenuItem(Material.NAME_TAG, "§e§lBasic Settings",
-                "§7Click to set name and description"));
-
-        inventory.setItem(11, createMenuItem(Material.STRUCTURE_BLOCK, "§e§lDimensions",
-                "§7Click to set blueprint dimensions"));
+        // Basic Settings Section - Now separated
+        inventory.setItem(10, createMenuItem(Material.NAME_TAG, "§e§lName", blueprint, "name"));
+        inventory.setItem(11, createMenuItem(Material.BOOK, "§e§lDescription", blueprint, "description"));
+        inventory.setItem(12, createMenuItem(Material.STRUCTURE_BLOCK, "§e§lDimensions", blueprint, "size"));
 
         // Block Requirements Section
-        inventory.setItem(13, createMenuItem(Material.CHEST, "§e§lRequired Blocks",
-                "§7Click to set required blocks"));
+        inventory.setItem(14, createMenuItem(Material.CHEST, "§e§lRequired Blocks", blueprint, "blocks"));
+        inventory.setItem(15, createMenuItem(Material.BARRIER, "§e§lRemove Blocks", blueprint, "remove_blocks"));
 
-        inventory.setItem(14, createMenuItem(Material.SPAWNER, "§e§lRequired Mobs",
-                "§7Click to set required mobs"));
+        // Mob Requirements Section
+        inventory.setItem(19, createMenuItem(Material.SPAWNER, "§e§lRequired Mobs", blueprint, "mobs"));
+        inventory.setItem(20, createMenuItem(Material.BARRIER, "§e§lRemove Mobs", blueprint, "remove_mobs"));
 
         // Biome Settings Section
-        inventory.setItem(16, createMenuItem(Material.GRASS_BLOCK, "§e§lRequired Biomes",
-                "§7Click to set required biomes"));
-
-        inventory.setItem(17, createMenuItem(Material.DEAD_BUSH, "§e§lForbidden Biomes",
-                "§7Click to set forbidden biomes"));
+        inventory.setItem(22, createMenuItem(Material.GRASS_BLOCK, "§e§lRequired Biomes", blueprint, "required_biomes"));
+        inventory.setItem(23, createMenuItem(Material.BARRIER, "§e§lRemove Required Biomes", blueprint, "remove_required_biomes"));
+        inventory.setItem(24, createMenuItem(Material.DEAD_BUSH, "§e§lForbidden Biomes", blueprint, "forbidden_biomes"));
+        inventory.setItem(25, createMenuItem(Material.BARRIER, "§e§lRemove Forbidden Biomes", blueprint, "remove_forbidden_biomes"));
 
         // Economy Settings Section
-        inventory.setItem(28, createMenuItem(Material.GOLD_INGOT, "§e§lIncome Settings",
-                "§7Click to set daily income"));
-
-        inventory.setItem(29, createMenuItem(Material.IRON_INGOT, "§e§lUpkeep Settings",
-                "§7Click to set daily upkeep"));
-
-        inventory.setItem(30, createMenuItem(Material.EMERALD, "§e§lPlacement Cost",
-                "§7Click to set placement cost"));
+        inventory.setItem(28, createMenuItem(Material.GOLD_INGOT, "§e§lIncome Settings", blueprint, "income"));
+        inventory.setItem(29, createMenuItem(Material.IRON_INGOT, "§e§lUpkeep Settings", blueprint, "upkeep"));
+        inventory.setItem(30, createMenuItem(Material.EMERALD, "§e§lPlacement Cost", blueprint, "cost"));
 
         // Group Settings Section
-        inventory.setItem(32, createMenuItem(Material.BOOKSHELF, "§e§lGroup Settings",
-                "§7Click to set group requirements"));
-
-        inventory.setItem(33, createMenuItem(Material.COMPARATOR, "§e§lUpkeep Sharing",
-                "§7Click to configure shared upkeep"));
+        inventory.setItem(32, createMenuItem(Material.BOOKSHELF, "§e§lGroup Settings", blueprint, "group"));
+        inventory.setItem(33, createMenuItem(Material.COMPARATOR, "§e§lUpkeep Sharing", blueprint, "shared_upkeep"));
 
         // Tool Settings Section
-        inventory.setItem(34, createMenuItem(Material.DIAMOND_AXE, "§e§lTool Settings",
-                "§7Click to set tool requirements"));
+        inventory.setItem(34, createMenuItem(Material.DIAMOND_AXE, "§e§lTool Settings", blueprint, "tool"));
+
+        // Add display material option
+        inventory.setItem(35, createMenuItem(Material.ITEM_FRAME, "§e§lDisplay Material", blueprint, "display_material"));
 
         // Save/Cancel Section
         inventory.setItem(49, createMenuItem(Material.LIME_CONCRETE, "§a§lSave Blueprint",
                 "§7Click to save the blueprint"));
-
         inventory.setItem(50, createMenuItem(Material.RED_CONCRETE, "§c§lCancel",
                 "§7Click to cancel creation"));
 
@@ -123,73 +115,53 @@ public class GUIManager {
         blueprintEditing.put(player, blueprint);
         Inventory inventory = Bukkit.createInventory(null, EDIT_MENU_SIZE, EDIT_MENU_TITLE);
 
-        // Add all the same items as create menu, but pre-filled with blueprint values
-        // Basic Settings Section
-        inventory.setItem(10, createMenuItem(Material.NAME_TAG, "§e§lBasic Settings",
-                "§7Current Name: §f" + blueprint.getName(),
-                "§7Current Description: §f" + blueprint.getDescription()));
-
-        inventory.setItem(11, createMenuItem(Material.STRUCTURE_BLOCK, "§e§lDimensions",
-                "§7Current Size: §f" + blueprint.getSizeX() + "x" + blueprint.getSizeY() + "x" + blueprint.getSizeZ()));
+        // Basic Settings Section - Now separated like create menu
+        inventory.setItem(10, createMenuItem(Material.NAME_TAG, "§e§lName", blueprint, "name"));
+        inventory.setItem(11, createMenuItem(Material.BOOK, "§e§lDescription", blueprint, "description"));
+        inventory.setItem(12, createMenuItem(Material.STRUCTURE_BLOCK, "§e§lDimensions", blueprint, "size"));
 
         // Block Requirements Section
-        List<String> blockLore = new ArrayList<>();
-        blockLore.add("§7Current Requirements:");
-        blueprint.getRequiredBlocks().forEach((block, amount) ->
-                blockLore.add("§7- §f" + block + ": " + amount));
-        inventory.setItem(13, createMenuItem(Material.CHEST, "§e§lRequired Blocks", blockLore));
+        inventory.setItem(14, createMenuItem(Material.CHEST, "§e§lRequired Blocks", blueprint, "blocks"));
+        inventory.setItem(15, createMenuItem(Material.BARRIER, "§e§lRemove Blocks", blueprint, "remove_blocks"));
 
         // Mob Requirements Section
-        List<String> mobLore = new ArrayList<>();
-        mobLore.add("§7Current Requirements:");
-        blueprint.getRequiredMobs().forEach((mob, amount) ->
-                mobLore.add("§7- §f" + mob + ": " + amount));
-        inventory.setItem(14, createMenuItem(Material.SPAWNER, "§e§lRequired Mobs", mobLore));
+        inventory.setItem(19, createMenuItem(Material.SPAWNER, "§e§lRequired Mobs", blueprint, "mobs"));
+        inventory.setItem(20, createMenuItem(Material.BARRIER, "§e§lRemove Mobs", blueprint, "remove_mobs"));
 
         // Biome Settings Section
-        List<String> requiredBiomeLore = new ArrayList<>();
-        requiredBiomeLore.add("§7Required Biomes:");
-        blueprint.getRequiredBiomes().forEach(biome ->
-                requiredBiomeLore.add("§7- §f" + biome));
-        inventory.setItem(16, createMenuItem(Material.GRASS_BLOCK, "§e§lRequired Biomes", requiredBiomeLore));
-
-        List<String> forbiddenBiomeLore = new ArrayList<>();
-        forbiddenBiomeLore.add("§7Forbidden Biomes:");
-        blueprint.getForbiddenBiomes().forEach(biome ->
-                forbiddenBiomeLore.add("§7- §f" + biome));
-        inventory.setItem(17, createMenuItem(Material.DEAD_BUSH, "§e§lForbidden Biomes", forbiddenBiomeLore));
+        inventory.setItem(22, createMenuItem(Material.GRASS_BLOCK, "§e§lRequired Biomes", blueprint, "required_biomes"));
+        inventory.setItem(23, createMenuItem(Material.BARRIER, "§e§lRemove Required Biomes", blueprint, "remove_required_biomes"));
+        inventory.setItem(24, createMenuItem(Material.DEAD_BUSH, "§e§lForbidden Biomes", blueprint, "forbidden_biomes"));
+        inventory.setItem(25, createMenuItem(Material.BARRIER, "§e§lRemove Forbidden Biomes", blueprint, "remove_forbidden_biomes"));
 
         // Economy Settings Section
-        inventory.setItem(28, createMenuItem(Material.GOLD_INGOT, "§e§lIncome Settings",
-                "§7Current Income: §f" + blueprint.getDailyIncome(),
-                "§7Income Type: §f" + blueprint.getIncomeType()));
-
-        inventory.setItem(29, createMenuItem(Material.IRON_INGOT, "§e§lUpkeep Settings",
-                "§7Current Upkeep: §f" + blueprint.getDailyUpkeep(),
-                "§7Upkeep Type: §f" + blueprint.getUpkeepType()));
-
-        inventory.setItem(30, createMenuItem(Material.EMERALD, "§e§lPlacement Cost",
-                "§7Current Cost: §f" + blueprint.getPlacementCost()));
+        inventory.setItem(28, createMenuItem(Material.GOLD_INGOT, "§e§lIncome Settings", blueprint, "income"));
+        inventory.setItem(29, createMenuItem(Material.IRON_INGOT, "§e§lUpkeep Settings", blueprint, "upkeep"));
+        inventory.setItem(30, createMenuItem(Material.EMERALD, "§e§lPlacement Cost", blueprint, "cost"));
 
         // Group Settings Section
-        inventory.setItem(32, createMenuItem(Material.BOOKSHELF, "§e§lGroup Settings",
-                "§7Required Count: §f" + blueprint.getRequiredCount()));
-
-        inventory.setItem(33, createMenuItem(Material.COMPARATOR, "§e§lUpkeep Sharing",
-                "§7Shared Upkeep: §f" + blueprint.isSharedUpkeep(),
-                "§7Multiplier: §f" + blueprint.getUpkeepMultiplier()));
+        inventory.setItem(32, createMenuItem(Material.BOOKSHELF, "§e§lGroup Settings", blueprint, "group"));
+        inventory.setItem(33, createMenuItem(Material.COMPARATOR, "§e§lUpkeep Sharing", blueprint, "shared_upkeep"));
 
         // Tool Settings Section
-        inventory.setItem(34, createMenuItem(Material.DIAMOND_AXE, "§e§lTool Settings",
-                "§7Tool Type: §f" + (blueprint.getToolType() != null ? blueprint.getToolType().name() : "None"),
-                "§7Durability Drain: §f" + blueprint.getDurabilityDrain()));
+        inventory.setItem(34, createMenuItem(Material.DIAMOND_AXE, "§e§lTool Settings", blueprint, "tool"));
+
+        // Display Material Option
+        inventory.setItem(35, createMenuItem(Material.ITEM_FRAME, "§e§lDisplay Material", blueprint, "display_material"));
 
         // Save/Cancel Section
-        inventory.setItem(49, createMenuItem(Material.LIME_CONCRETE, "§a§lSave Changes",
-                "§7Click to save changes"));
+        inventory.setItem(49, createMenuItem(Material.LIME_CONCRETE, "§a§lSave Changes", "§7Click to save changes"));
+        inventory.setItem(50, createMenuItem(Material.RED_CONCRETE, "§c§lCancel", "§7Click to cancel editing"));
 
-        inventory.setItem(50, createMenuItem(Material.RED_CONCRETE, "§c§lCancel",
-                "§7Click to cancel editing"));
+        player.openInventory(inventory);
+    }
+
+    public void openEditBlueprintSelection(Player player) {
+        Inventory inventory = Bukkit.createInventory(null, BLUEPRINT_MENU_SIZE, "Select Blueprint to Edit");
+
+        for (Blueprint blueprint : plugin.getBlueprintManager().getAllBlueprints()) {
+            inventory.addItem(createBlueprintItem(blueprint));
+        }
 
         player.openInventory(inventory);
     }
@@ -234,6 +206,111 @@ public class GUIManager {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(name);
+            meta.setLore(lore);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private ItemStack createMenuItem(Material material, String name, Blueprint blueprint, String field) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(name);
+            List<String> lore = new ArrayList<>();
+
+            // Add current value based on field
+            switch (field) {
+                case "name":
+                    lore.add("§7Current Name: §f" + blueprint.getName());
+                    break;
+                case "description":
+                    lore.add("§7Current Description: §f" + blueprint.getDescription());
+                    break;
+                case "size":
+                    lore.add("§7Current Size: §f" + blueprint.getSizeX() + "x" + blueprint.getSizeY() + "x" + blueprint.getSizeZ());
+                    break;
+                case "blocks":
+                    lore.add("§7Current Block Requirements:");
+                    blueprint.getRequiredBlocks().forEach((block, amount) ->
+                            lore.add("§7- §f" + block + ": " + amount));
+                    break;
+                case "remove_blocks":
+                    lore.add("§7Click to remove a block requirement");
+                    blueprint.getRequiredBlocks().forEach((block, amount) ->
+                            lore.add("§7- §f" + block + ": " + amount));
+                    break;
+                case "mobs":
+                    lore.add("§7Current Mob Requirements:");
+                    blueprint.getRequiredMobs().forEach((mob, amount) ->
+                            lore.add("§7- §f" + mob + ": " + amount));
+                    break;
+                case "remove_mobs":
+                    lore.add("§7Click to remove a mob requirement");
+                    blueprint.getRequiredMobs().forEach((mob, amount) ->
+                            lore.add("§7- §f" + mob + ": " + amount));
+                    break;
+                case "required_biomes":
+                    lore.add("§7Current Required Biomes:");
+                    blueprint.getRequiredBiomes().forEach(biome ->
+                            lore.add("§7- §f" + biome));
+                    break;
+                case "remove_required_biomes":
+                    lore.add("§7Click to remove a required biome");
+                    blueprint.getRequiredBiomes().forEach(biome ->
+                            lore.add("§7- §f" + biome));
+                    break;
+                case "forbidden_biomes":
+                    lore.add("§7Current Forbidden Biomes:");
+                    blueprint.getForbiddenBiomes().forEach(biome ->
+                            lore.add("§7- §f" + biome));
+                    break;
+                case "remove_forbidden_biomes":
+                    lore.add("§7Click to remove a forbidden biome");
+                    blueprint.getForbiddenBiomes().forEach(biome ->
+                            lore.add("§7- §f" + biome));
+                    break;
+                case "income":
+                    if (blueprint.getIncomeType().startsWith("template:")) {
+                        String templateName = blueprint.getIncomeType().substring(9);
+                        lore.add("§7Current Income Template: §f" + templateName);
+                        lore.addAll(plugin.getResourceTemplateManager().getResourcesDisplay(templateName));
+                    } else {
+                        lore.add("§7Current Income: §f" + blueprint.getDailyIncome() + " " + blueprint.getIncomeType());
+                    }
+                    break;
+                case "upkeep":
+                    if (blueprint.getUpkeepType().startsWith("template:")) {
+                        String templateName = blueprint.getUpkeepType().substring(9);
+                        lore.add("§7Current Upkeep Template: §f" + templateName);
+                        lore.addAll(plugin.getResourceTemplateManager().getResourcesDisplay(templateName));
+                    } else {
+                        lore.add("§7Current Upkeep: §f" + blueprint.getDailyUpkeep() + " " + blueprint.getUpkeepType());
+                    }
+                    break;
+                case "cost":
+                    lore.add("§7Current Cost: §f" + blueprint.getPlacementCost());
+                    break;
+                case "group":
+                    lore.add("§7Current Required Count: §f" + blueprint.getRequiredCount());
+                    break;
+                case "shared_upkeep":
+                    lore.add("§7Shared Upkeep: §f" + blueprint.isSharedUpkeep());
+                    lore.add("§7Multiplier: §f" + blueprint.getUpkeepMultiplier());
+                    break;
+                case "tool":
+                    String toolType = blueprint.getToolType() != null ? blueprint.getToolType().name() : "None";
+                    lore.add("§7Current Tool Type: §f" + toolType);
+                    lore.add("§7Current Durability Drain: §f" + blueprint.getDurabilityDrain());
+                    break;
+                case "display_material":
+                    lore.add("§7Current Display Material: §f" +
+                            (blueprint.getDisplayMaterial() != null ? blueprint.getDisplayMaterial().name() : "PAPER"));
+                    break;
+            }
+
+            lore.add("");
+            lore.add("§eClick to modify");
             meta.setLore(lore);
             item.setItemMeta(meta);
         }
