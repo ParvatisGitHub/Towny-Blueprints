@@ -38,6 +38,9 @@ public class GUIListener implements Listener {
         } else if (title.equals("Delete Blueprint")) {
             event.setCancelled(true);
             handleDeleteMenu(event, player);
+        } else if (title.equals("Select Blueprint to Edit")) {
+            event.setCancelled(true);
+            handleEditSelection(event, player);
         }
     }
 
@@ -47,12 +50,13 @@ public class GUIListener implements Listener {
         Player player = (Player) event.getPlayer();
         String title = event.getView().getTitle();
 
-        if (title.equals("Create Blueprint")) {
-            plugin.getGuiManager().removeBlueprintInCreation(player);
-            plugin.getChatInputListener().clearPlayerState(player);
-        } else if (title.equals("Edit Blueprint")) {
-            plugin.getGuiManager().removeBlueprintInEditing(player);
-            plugin.getChatInputListener().clearPlayerState(player);
+        if ((title.equals("Create Blueprint") || title.equals("Edit Blueprint"))) {
+            // Only clear states if we're not in chat input mode
+            if (!plugin.getChatInputListener().isInChatInput(player)) {
+                plugin.getGuiManager().removeBlueprintInCreation(player);
+                plugin.getGuiManager().removeBlueprintInEditing(player);
+                plugin.getChatInputListener().clearPlayerState(player);
+            }
         }
     }
 
@@ -94,7 +98,7 @@ public class GUIListener implements Listener {
                 plugin.getGuiManager().startBlueprintCreation(player);
                 break;
             case ANVIL:
-                plugin.getGuiManager().openEditMenu(player, null);
+                plugin.getGuiManager().openEditBlueprintSelection(player);
                 break;
             case BARRIER:
                 plugin.getGuiManager().openDeleteMenu(player);
@@ -111,40 +115,52 @@ public class GUIListener implements Listener {
 
         switch (clicked.getType()) {
             case NAME_TAG:
-                startChatInput(player, "NAME", "Enter the blueprint name:");
+                startChatInput(player, ChatInputListener.InputState.NAME, "Enter the blueprint name:");
+                break;
+            case BOOK:
+                startChatInput(player, ChatInputListener.InputState.DESCRIPTION, "Enter the blueprint description:");
                 break;
             case STRUCTURE_BLOCK:
-                startChatInput(player, "SIZE", "Enter dimensions (format: x,y,z):");
+                startChatInput(player, ChatInputListener.InputState.SIZE, "Enter dimensions (format: x,y,z):");
                 break;
             case CHEST:
-                startChatInput(player, "BLOCKS", "Enter required blocks (format: MATERIAL:amount):");
+                if (clicked.getItemMeta().getDisplayName().contains("Required Blocks")) {
+                    startChatInput(player, ChatInputListener.InputState.BLOCKS, "Enter required blocks (format: MATERIAL:amount):");
+                }
+                break;
+            case BARRIER:
+                handleRemovalOption(player, clicked.getItemMeta().getDisplayName(), blueprint);
                 break;
             case SPAWNER:
-                startChatInput(player, "MOBS", "Enter required mobs (format: TYPE:amount):");
+                startChatInput(player, ChatInputListener.InputState.MOBS, "Enter required mobs (format: TYPE:amount):");
                 break;
             case GRASS_BLOCK:
-                startChatInput(player, "REQUIRED_BIOMES", "Enter required biomes (one per line):");
+                startChatInput(player, ChatInputListener.InputState.REQUIRED_BIOMES, "Enter required biomes (one per line):");
                 break;
             case DEAD_BUSH:
-                startChatInput(player, "FORBIDDEN_BIOMES", "Enter forbidden biomes (one per line):");
+                startChatInput(player, ChatInputListener.InputState.FORBIDDEN_BIOMES, "Enter forbidden biomes (one per line):");
                 break;
             case GOLD_INGOT:
-                startChatInput(player, "INCOME", "Enter daily income (format: amount type):");
+                startChatInput(player, ChatInputListener.InputState.INCOME, "Enter daily income (format: amount type):");
                 break;
             case IRON_INGOT:
-                startChatInput(player, "UPKEEP", "Enter daily upkeep (format: amount type):");
+                startChatInput(player, ChatInputListener.InputState.UPKEEP, "Enter daily upkeep (format: amount type):");
                 break;
             case EMERALD:
-                startChatInput(player, "COST", "Enter placement cost:");
+                startChatInput(player, ChatInputListener.InputState.COST, "Enter placement cost:");
                 break;
             case BOOKSHELF:
-                startChatInput(player, "GROUP", "Enter required count:");
+                startChatInput(player, ChatInputListener.InputState.GROUP, "Enter required count:");
                 break;
             case COMPARATOR:
-                startChatInput(player, "SHARED_UPKEEP", "Enter shared upkeep settings (format: true/false multiplier):");
+                startChatInput(player, ChatInputListener.InputState.SHARED_UPKEEP, "Enter shared upkeep settings (format: true/false multiplier):");
                 break;
             case DIAMOND_AXE:
-                startChatInput(player, "TOOL", "Enter tool settings (format: TOOL_TYPE durability_drain):");
+                startChatInput(player, ChatInputListener.InputState.TOOL, "Enter tool settings (format: TOOL_TYPE durability_drain):");
+                break;
+            case ITEM_FRAME:
+                startChatInput(player, ChatInputListener.InputState.DISPLAY_MATERIAL,
+                        "Enter the display material name (e.g., DIAMOND_SWORD):");
                 break;
             case LIME_CONCRETE:
                 saveBlueprint(player, blueprint);
@@ -155,6 +171,22 @@ public class GUIListener implements Listener {
         }
     }
 
+    private void handleRemovalOption(Player player, String title, Blueprint blueprint) {
+        if (title.contains("Remove Blocks")) {
+            startChatInput(player, ChatInputListener.InputState.REMOVE_BLOCKS,
+                    "Enter the block type to remove, or 'cancel' to go back:");
+        } else if (title.contains("Remove Mobs")) {
+            startChatInput(player, ChatInputListener.InputState.REMOVE_MOBS,
+                    "Enter the mob type to remove, or 'cancel' to go back:");
+        } else if (title.contains("Remove Required Biomes")) {
+            startChatInput(player, ChatInputListener.InputState.REMOVE_REQUIRED_BIOMES,
+                    "Enter the required biome to remove, or 'cancel' to go back:");
+        } else if (title.contains("Remove Forbidden Biomes")) {
+            startChatInput(player, ChatInputListener.InputState.REMOVE_FORBIDDEN_BIOMES,
+                    "Enter the forbidden biome to remove, or 'cancel' to go back:");
+        }
+    }
+
     private void handleEditMenu(InventoryClickEvent event, Player player) {
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType() == Material.AIR) return;
@@ -162,8 +194,74 @@ public class GUIListener implements Listener {
         Blueprint blueprint = plugin.getGuiManager().getBlueprintInEditing(player);
         if (blueprint == null) return;
 
-        // Handle the same options as create menu
-        handleCreateMenu(event, player);
+        switch (clicked.getType()) {
+            case NAME_TAG:
+                startChatInput(player, ChatInputListener.InputState.NAME, "Enter the blueprint name:");
+                break;
+            case BOOK:
+                startChatInput(player, ChatInputListener.InputState.DESCRIPTION, "Enter the blueprint description:");
+                break;
+            case STRUCTURE_BLOCK:
+                startChatInput(player, ChatInputListener.InputState.SIZE, "Enter dimensions (format: x,y,z):");
+                break;
+            case CHEST:
+                if (clicked.getItemMeta().getDisplayName().contains("Required Blocks")) {
+                    startChatInput(player, ChatInputListener.InputState.BLOCKS, "Enter required blocks (format: MATERIAL:amount):");
+                }
+                break;
+            case BARRIER:
+                handleRemovalOption(player, clicked.getItemMeta().getDisplayName(), blueprint);
+                break;
+            case SPAWNER:
+                startChatInput(player, ChatInputListener.InputState.MOBS, "Enter required mobs (format: TYPE:amount):");
+                break;
+            case GRASS_BLOCK:
+                startChatInput(player, ChatInputListener.InputState.REQUIRED_BIOMES, "Enter required biomes (one per line):");
+                break;
+            case DEAD_BUSH:
+                startChatInput(player, ChatInputListener.InputState.FORBIDDEN_BIOMES, "Enter forbidden biomes (one per line):");
+                break;
+            case GOLD_INGOT:
+                startChatInput(player, ChatInputListener.InputState.INCOME, "Enter daily income (format: amount type):");
+                break;
+            case IRON_INGOT:
+                startChatInput(player, ChatInputListener.InputState.UPKEEP, "Enter daily upkeep (format: amount type):");
+                break;
+            case EMERALD:
+                startChatInput(player, ChatInputListener.InputState.COST, "Enter placement cost:");
+                break;
+            case BOOKSHELF:
+                startChatInput(player, ChatInputListener.InputState.GROUP, "Enter required count:");
+                break;
+            case COMPARATOR:
+                startChatInput(player, ChatInputListener.InputState.SHARED_UPKEEP, "Enter shared upkeep settings (format: true/false multiplier):");
+                break;
+            case DIAMOND_AXE:
+                startChatInput(player, ChatInputListener.InputState.TOOL, "Enter tool settings (format: TOOL_TYPE durability_drain):");
+                break;
+            case ITEM_FRAME:
+                startChatInput(player, ChatInputListener.InputState.DISPLAY_MATERIAL,
+                        "Enter the display material name (e.g., DIAMOND_SWORD):");
+                break;
+            case LIME_CONCRETE:
+                saveEditedBlueprint(player, blueprint);
+                break;
+            case RED_CONCRETE:
+                cancelEditing(player);
+                break;
+        }
+    }
+
+    private void handleEditSelection(InventoryClickEvent event, Player player) {
+        ItemStack clicked = event.getCurrentItem();
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+
+        String name = clicked.getItemMeta().getDisplayName().substring(2); // Remove color code
+        Blueprint blueprint = plugin.getBlueprintManager().getBlueprint(name);
+
+        if (blueprint != null) {
+            plugin.getGuiManager().openEditMenu(player, blueprint);
+        }
     }
 
     private void handleDeleteMenu(InventoryClickEvent event, Player player) {
@@ -181,13 +279,24 @@ public class GUIListener implements Listener {
         }
     }
 
-    private void startChatInput(Player player, String type, String prompt) {
-        player.closeInventory();
-        plugin.getChatInputListener().setPlayerState(player, ChatInputListener.InputState.valueOf(type));
+    private void startChatInput(Player player, ChatInputListener.InputState state, String prompt) {
+        // Set chat input state first
+        plugin.getChatInputListener().setPlayerState(player, state);
+
+        // Send prompt message
         player.sendMessage("§e" + prompt);
+        player.sendMessage("§7Type your response in chat, or type 'cancel' to go back.");
+
+        // Close inventory last
+        player.closeInventory();
     }
 
     private void saveBlueprint(Player player, Blueprint blueprint) {
+        if (blueprint == null) {
+            player.sendMessage("§cError: No blueprint to save!");
+            return;
+        }
+
         if (blueprint.getName().equals("New Blueprint")) {
             player.sendMessage("§cPlease set a name for the blueprint!");
             return;
@@ -204,11 +313,31 @@ public class GUIListener implements Listener {
         plugin.getGuiManager().openAdminMenu(player);
     }
 
+    private void saveEditedBlueprint(Player player, Blueprint blueprint) {
+        if (blueprint == null) {
+            player.sendMessage("§cError: No blueprint to save!");
+            return;
+        }
+
+        plugin.getBlueprintManager().saveBlueprint(blueprint);
+        player.sendMessage("§aBlueprint changes saved successfully!");
+        player.closeInventory();
+        plugin.getGuiManager().openAdminMenu(player);
+    }
+
     private void cancelCreation(Player player) {
         plugin.getGuiManager().removeBlueprintInCreation(player);
         plugin.getGuiManager().removeBlueprintInEditing(player);
         plugin.getChatInputListener().clearPlayerState(player);
         player.sendMessage("§cBlueprint creation cancelled.");
+        player.closeInventory();
+        plugin.getGuiManager().openAdminMenu(player);
+    }
+
+    private void cancelEditing(Player player) {
+        plugin.getGuiManager().removeBlueprintInEditing(player);
+        plugin.getChatInputListener().clearPlayerState(player);
+        player.sendMessage("§cBlueprint editing cancelled.");
         player.closeInventory();
         plugin.getGuiManager().openAdminMenu(player);
     }
