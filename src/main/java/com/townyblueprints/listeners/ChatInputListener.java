@@ -2,49 +2,52 @@ package com.townyblueprints.listeners;
 
 import com.townyblueprints.TownyBlueprints;
 import com.townyblueprints.models.Blueprint;
+import com.townyblueprints.util.BiomeUtil;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Material;
+import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.Arrays;
 import java.util.*;
 
 @RequiredArgsConstructor
 public class ChatInputListener implements Listener {
     private final TownyBlueprints plugin;
     private final Map<UUID, BlueprintEditSession> editSessions = new HashMap<>();
-    Set<String> validBiomes = new HashSet<>(Arrays.asList(
-            "BADLANDS", "BAMBOO_JUNGLE", "BASALT_DELTAS", "BEACH", "BIRCH_FOREST", "CHERRY_GROVE",
-            "COLD_OCEAN", "CRIMSON_FOREST", "DARK_FOREST", "DEEP_COLD_OCEAN", "DEEP_DARK",
-            "DEEP_FROZEN_OCEAN", "DEEP_LUKEWARM_OCEAN", "DEEP_OCEAN", "DESERT", "DRIPSTONE_CAVES",
-            "END_BARRENS", "END_HIGHLANDS", "END_MIDLANDS", "ERODED_BADLANDS", "FLOWER_FOREST",
-            "FOREST", "FROZEN_OCEAN", "FROZEN_PEAKS", "FROZEN_RIVER", "GROVE", "ICE_SPIKES",
-            "JAGGED_PEAKS", "JUNGLE", "LUKEWARM_OCEAN", "LUSH_CAVES", "MANGROVE_SWAMP", "MEADOW",
-            "MUSHROOM_FIELDS", "NETHER_WASTES", "OCEAN", "OLD_GROWTH_BIRCH_FOREST",
-            "OLD_GROWTH_PINE_TAIGA", "OLD_GROWTH_SPRUCE_TAIGA", "PLAINS", "RIVER", "SAVANNA",
-            "SAVANNA_PLATEAU", "SMALL_END_ISLANDS", "SNOWY_BEACH", "SNOWY_PLAINS", "SNOWY_SLOPES",
-            "SNOWY_TAIGA", "SOUL_SAND_VALLEY", "SPARSE_JUNGLE", "STONY_PEAKS", "STONY_SHORE",
-            "SUNFLOWER_PLAINS", "SWAMP", "TAIGA", "THE_END", "THE_VOID", "WARM_OCEAN",
-            "WARPED_FOREST", "WINDSWEPT_FOREST", "WINDSWEPT_GRAVELLY_HILLS", "WINDSWEPT_HILLS",
-            "WINDSWEPT_SAVANNA", "WOODED_BADLANDS"
-    ));
+
     public enum InputState {
         NONE,
         NAME,
         DESCRIPTION,
         SIZE,
         BLOCKS,
+        REMOVE_BLOCKS,
         MOBS,
+        REMOVE_MOBS,
         REQUIRED_BIOMES,
+        REMOVE_REQUIRED_BIOMES,
         FORBIDDEN_BIOMES,
+        REMOVE_FORBIDDEN_BIOMES,
         INCOME,
         UPKEEP,
         COST,
         GROUP,
         SHARED_UPKEEP,
-        TOOL
+        TOOL,
+        DISPLAY_MATERIAL
+    }
+
+    public boolean isInChatInput(Player player) {
+        BlueprintEditSession session = editSessions.get(player.getUniqueId());
+        return session != null && session.getCurrentField() != InputState.NONE;
     }
 
     @EventHandler
@@ -57,57 +60,103 @@ public class ChatInputListener implements Listener {
             String message = event.getMessage().trim();
 
             if (message.equalsIgnoreCase("cancel")) {
-                editSessions.remove(player.getUniqueId());
-                player.sendMessage("§cBlueprint editing cancelled.");
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        editSessions.remove(player.getUniqueId());
+                        player.sendMessage("§cInput cancelled.");
+
+                        if (plugin.getGuiManager().getBlueprintInCreation(player) != null) {
+                            plugin.getGuiManager().openCreateMenu(player);
+                        } else if (plugin.getGuiManager().getBlueprintInEditing(player) != null) {
+                            plugin.getGuiManager().openEditMenu(player, plugin.getGuiManager().getBlueprintInEditing(player));
+                        }
+                    }
+                }.runTask(plugin);
                 return;
             }
 
             if (message.equalsIgnoreCase("done")) {
-                finishEditing(player);
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        finishEditing(player);
+                    }
+                }.runTask(plugin);
                 return;
             }
 
-            switch (session.getCurrentField()) {
-                case NAME:
-                    handleNameInput(player, session, message);
-                    break;
-                case DESCRIPTION:
-                    handleDescriptionInput(player, session, message);
-                    break;
-                case SIZE:
-                    handleSizeInput(player, session, message);
-                    break;
-                case BLOCKS:
-                    handleBlocksInput(player, session, message);
-                    break;
-                case MOBS:
-                    handleMobsInput(player, session, message);
-                    break;
-                case REQUIRED_BIOMES:
-                    handleRequiredBiomesInput(player, session, message);
-                    break;
-                case FORBIDDEN_BIOMES:
-                    handleForbiddenBiomesInput(player, session, message);
-                    break;
-                case INCOME:
-                    handleIncomeInput(player, session, message);
-                    break;
-                case UPKEEP:
-                    handleUpkeepInput(player, session, message);
-                    break;
-                case COST:
-                    handleCostInput(player, session, message);
-                    break;
-                case GROUP:
-                    handleGroupInput(player, session, message);
-                    break;
-                case SHARED_UPKEEP:
-                    handleSharedUpkeepInput(player, session, message);
-                    break;
-                case TOOL:
-                    handleToolInput(player, session, message);
-                    break;
-            }
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    processInput(player, session, message);
+                }
+            }.runTask(plugin);
+        }
+    }
+
+    private void processInput(Player player, BlueprintEditSession session, String message) {
+        switch (session.getCurrentField()) {
+            case NAME:
+                handleNameInput(player, session, message);
+                break;
+            case DESCRIPTION:
+                handleDescriptionInput(player, session, message);
+                break;
+            case SIZE:
+                handleSizeInput(player, session, message);
+                break;
+            case BLOCKS:
+                handleBlocksInput(player, session, message);
+                break;
+            case REMOVE_BLOCKS:
+                handleRemoveBlocks(player, session, message);
+                break;
+            case MOBS:
+                handleMobsInput(player, session, message);
+                break;
+            case REMOVE_MOBS:
+                handleRemoveMobs(player, session, message);
+                break;
+            case REQUIRED_BIOMES:
+                handleRequiredBiomesInput(player, session, message);
+                break;
+            case REMOVE_REQUIRED_BIOMES:
+                handleRemoveRequiredBiomes(player, session, message);
+                break;
+            case FORBIDDEN_BIOMES:
+                handleForbiddenBiomesInput(player, session, message);
+                break;
+            case REMOVE_FORBIDDEN_BIOMES:
+                handleRemoveForbiddenBiomes(player, session, message);
+                break;
+            case INCOME:
+                handleIncomeInput(player, session, message);
+                break;
+            case UPKEEP:
+                handleUpkeepInput(player, session, message);
+                break;
+            case COST:
+                handleCostInput(player, session, message);
+                break;
+            case GROUP:
+                handleGroupInput(player, session, message);
+                break;
+            case SHARED_UPKEEP:
+                handleSharedUpkeepInput(player, session, message);
+                break;
+            case TOOL:
+                handleToolInput(player, session, message);
+                break;
+            case DISPLAY_MATERIAL:
+                handleDisplayMaterialInput(player, session, message);
+                break;
+        }
+
+        if (plugin.getGuiManager().getBlueprintInCreation(player) != null) {
+            plugin.getGuiManager().openCreateMenu(player);
+        } else if (plugin.getGuiManager().getBlueprintInEditing(player) != null) {
+            plugin.getGuiManager().openEditMenu(player, plugin.getGuiManager().getBlueprintInEditing(player));
         }
     }
 
@@ -169,9 +218,7 @@ public class ChatInputListener implements Listener {
                     return;
                 }
 
-                // Check if it's a valid block definition
                 if (!plugin.getBlockDefinitionManager().isBlockDefinition(blockType)) {
-                    // If not a definition, validate as a material
                     try {
                         Material.valueOf(blockType);
                     } catch (IllegalArgumentException e) {
@@ -189,6 +236,16 @@ public class ChatInputListener implements Listener {
         } else {
             player.sendMessage("§cInvalid format. Use MATERIAL:amount (e.g., STONE:10)");
         }
+    }
+
+    private void handleRemoveBlocks(Player player, BlueprintEditSession session, String input) {
+        String blockType = input.trim().toUpperCase();
+        if (session.getBlueprint().removeRequiredBlock(blockType)) {
+            player.sendMessage("§aRemoved block requirement: §f" + blockType);
+        } else {
+            player.sendMessage("§cBlock type not found in requirements!");
+        }
+        finishEditing(player);
     }
 
     private void handleMobsInput(Player player, BlueprintEditSession session, String input) {
@@ -221,44 +278,97 @@ public class ChatInputListener implements Listener {
         }
     }
 
+    private void handleRemoveMobs(Player player, BlueprintEditSession session, String input) {
+        String mobType = input.trim().toUpperCase();
+        if (session.getBlueprint().removeRequiredMob(mobType)) {
+            player.sendMessage("§aRemoved mob requirement: §f" + mobType);
+        } else {
+            player.sendMessage("§cMob type not found in requirements!");
+        }
+        finishEditing(player);
+    }
+    private boolean isValidBiomeName(String biomeName) {
+        // Check if the biome name exists in any of the valid biome lists in BiomeUtil
+        return BiomeUtil.isOverWorld(biomeName) || BiomeUtil.isNether(biomeName) ||
+                BiomeUtil.isEnd(biomeName) || BiomeUtil.isOcean(biomeName) ||
+                BiomeUtil.isCold(biomeName) || BiomeUtil.isTemperate(biomeName) ||
+                BiomeUtil.isWarm(biomeName) || BiomeUtil.isSnowy(biomeName);
+    }
     private void handleRequiredBiomesInput(Player player, BlueprintEditSession session, String input) {
         try {
             String biomeName = input.toUpperCase();
 
-            // Try to convert the input string into a Biome enum
-            if (validBiomes.contains(biomeName)) {
-                session.getBlueprint().addRequiredBiome(biomeName);  // Add biome name (as String)
-                player.sendMessage(String.format("§aAdded Required biome: §f%s", biomeName));
-                player.sendMessage("§eEnter another required biome, or type 'done' to continue:");
+            // Check if the biome name is valid by comparing it with predefined biome lists in BiomeUtil
+            if (isValidBiomeName(biomeName)) {
+                // Check if the biome is in one of the valid categories using BiomeUtil
+                if (BiomeUtil.isOverWorld(biomeName) || BiomeUtil.isNether(biomeName) ||
+                        BiomeUtil.isEnd(biomeName) || BiomeUtil.isOcean(biomeName)) {
+
+                    // Add the biome to the required list in the session
+                    session.getBlueprint().addRequiredBiome(biomeName);
+                    player.sendMessage(String.format("§aAdded required biome: §f%s", biomeName));
+                    player.sendMessage("§eEnter another required biome, or type 'done' to continue:");
+                } else {
+                    // If the biome is not in any of the valid categories, notify the player
+                    player.sendMessage("§cInvalid biome type! Please enter a valid biome name.");
+                }
             } else {
-                // If invalid, inform the player
-                player.sendMessage("§cInvalid biome type! Please enter a valid biome name.");
+                // If the biome name doesn't exist, notify the player
+                player.sendMessage("§cInvalid biome name! Please enter a valid biome name.");
             }
         } catch (Exception e) {
-            // If any exception occurs, inform the player
+            // Handle any other exceptions (this shouldn't normally happen)
             player.sendMessage("§cAn error occurred while processing the biome name.");
         }
+    }
+
+    private void handleRemoveRequiredBiomes(Player player, BlueprintEditSession session, String input) {
+        String biome = input.trim().toUpperCase();
+        if (session.getBlueprint().removeRequiredBiome(biome)) {
+            player.sendMessage("§aRemoved required biome: §f" + biome);
+        } else {
+            player.sendMessage("§cBiome not found in required biomes!");
+        }
+        finishEditing(player);
     }
 
     private void handleForbiddenBiomesInput(Player player, BlueprintEditSession session, String input) {
         try {
             String biomeName = input.toUpperCase();
 
-            // Try to convert the input string into a Biome enum
-            if (validBiomes.contains(biomeName)) {
-                session.getBlueprint().addForbiddenBiome(biomeName);  // Add biome name (as String)
-                player.sendMessage(String.format("§aAdded forbidden biome: §f%s", biomeName));
-                player.sendMessage("§eEnter another forbidden biome, or type 'done' to continue:");
+            // Check if the biome name is valid by comparing it with predefined biome lists in BiomeUtil
+            if (isValidBiomeName(biomeName)) {
+                // Check if the biome is in one of the valid categories using BiomeUtil
+                if (BiomeUtil.isOverWorld(biomeName) || BiomeUtil.isNether(biomeName) ||
+                        BiomeUtil.isEnd(biomeName) || BiomeUtil.isOcean(biomeName)) {
+
+                    // Add the biome to the forbidden list in the session
+                    session.getBlueprint().addForbiddenBiome(biomeName);
+                    player.sendMessage(String.format("§aAdded forbidden biome: §f%s", biomeName));
+                    player.sendMessage("§eEnter another forbidden biome, or type 'done' to continue:");
+                } else {
+                    // If the biome is not in any of the valid categories, notify the player
+                    player.sendMessage("§cInvalid biome type! Please enter a valid biome name.");
+                }
             } else {
-                // If invalid, inform the player
-                player.sendMessage("§cInvalid biome type! Please enter a valid biome name.");
+                // If the biome name doesn't exist, notify the player
+                player.sendMessage("§cInvalid biome name! Please enter a valid biome name.");
             }
         } catch (Exception e) {
-            // If any exception occurs, inform the player
+            // Handle any other exceptions (this shouldn't normally happen)
             player.sendMessage("§cAn error occurred while processing the biome name.");
         }
     }
 
+    private void handleRemoveForbiddenBiomes(Player player, BlueprintEditSession session, String input) {
+        String biome = input.trim().toUpperCase();
+        if (session.getBlueprint().removeForbiddenBiome(biome)) {
+            player.sendMessage("§aRemoved forbidden biome: §f" + biome);
+        } else {
+            player.sendMessage("§cBiome not found in forbidden biomes!");
+        }
+        finishEditing(player);
+    }
 
     private void handleIncomeInput(Player player, BlueprintEditSession session, String input) {
         String[] parts = input.split(" ");
@@ -399,17 +509,28 @@ public class ChatInputListener implements Listener {
                     return;
                 }
 
+                if (plugin.getToolDefinitionManager().isToolDefinition(toolType)) {
+                    List<Material> tools = plugin.getToolDefinitionManager().getDefinition(toolType);
+                    if (!tools.isEmpty()) {
+                        session.getBlueprint().setToolType(tools.get(0));
+                        session.getBlueprint().setDurabilityDrain(durability);
+                        player.sendMessage(String.format("§aTool settings set to: §f%s with durability drain %d", toolType, durability));
+                        finishEditing(player);
+                        return;
+                    }
+                }
+
                 try {
                     Material tool = Material.valueOf(toolType);
                     if (!tool.name().endsWith("_AXE") && !tool.name().endsWith("_PICKAXE") &&
                             !tool.name().endsWith("_SHOVEL") && !tool.name().endsWith("_HOE") &&
                             !tool.name().endsWith("_SWORD")) {
-                        player.sendMessage("§cInvalid tool type! Must be a valid tool material.");
+                        player.sendMessage("§cInvalid tool type! Must be a valid tool material or definition (e.g., AXE, PICKAXE)");
                         return;
                     }
                     session.getBlueprint().setToolType(tool);
                 } catch (IllegalArgumentException e) {
-                    player.sendMessage("§cInvalid tool type! Must be a valid material name.");
+                    player.sendMessage("§cInvalid tool type! Must be a valid material name or tool definition.");
                     return;
                 }
 
@@ -420,7 +541,18 @@ public class ChatInputListener implements Listener {
                 player.sendMessage("§cInvalid durability format! Please enter a number.");
             }
         } else {
-            player.sendMessage("§cPlease use format: TOOL_TYPE durability_drain (e.g., DIAMOND_AXE 10)");
+            player.sendMessage("§cPlease use format: TOOL_TYPE durability_drain (e.g., AXE 10 or DIAMOND_AXE 10)");
+        }
+    }
+
+    private void handleDisplayMaterialInput(Player player, BlueprintEditSession session, String input) {
+        try {
+            Material material = Material.valueOf(input.toUpperCase());
+            session.getBlueprint().setDisplayMaterial(material);
+            player.sendMessage(String.format("§aDisplay material set to: §f%s", material.name()));
+            finishEditing(player);
+        } catch (IllegalArgumentException e) {
+            player.sendMessage("§cInvalid material! Please enter a valid material name.");
         }
     }
 
@@ -431,6 +563,8 @@ public class ChatInputListener implements Listener {
             plugin.getBlueprintManager().saveBlueprint(blueprint);
             editSessions.remove(player.getUniqueId());
             player.sendMessage("§aBlueprint saved successfully!");
+
+            plugin.getGuiManager().openAdminMenu(player);
         }
     }
 
@@ -441,10 +575,12 @@ public class ChatInputListener implements Listener {
     }
 
     public void setPlayerState(Player player, InputState state) {
-        BlueprintEditSession session = editSessions.get(player.getUniqueId());
-        if (session != null) {
-            session.setCurrentField(state);
-        }
+        editSessions.put(player.getUniqueId(), new BlueprintEditSession(
+                plugin.getGuiManager().getBlueprintInCreation(player) != null ?
+                        plugin.getGuiManager().getBlueprintInCreation(player) :
+                        plugin.getGuiManager().getBlueprintInEditing(player)
+        ));
+        editSessions.get(player.getUniqueId()).setCurrentField(state);
     }
 
     public void clearPlayerState(Player player) {
