@@ -27,6 +27,7 @@ public class ToolDefinitionManager {
         File file = new File(plugin.getDataFolder(), "tool_definitions.yml");
         if (!file.exists()) {
             createDefaultDefinitions(file);
+            plugin.getLogger().info("Successfully Created Tool Definitions");
         }
 
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -52,9 +53,9 @@ public class ToolDefinitionManager {
                 if (TownyBlueprints.getInstance().getConfigManager().isDebugMode()) {
                     plugin.getLogger().info("Loaded tool definition for " + key + " with " + materials.size() + " tools");
                 }
-                plugin.getLogger().info("Successfully Created Block Definitions");
             }
         }
+        plugin.getLogger().info("Successfully Loaded Tool Definitions");
     }
     
     private void createDefaultDefinitions(File file) {
@@ -119,7 +120,6 @@ public class ToolDefinitionManager {
 
         try {
             config.save(file);
-            plugin.getLogger().info("Successfully Created Tool Definitions");
         } catch (IOException e) {
             plugin.getLogger().severe("Could not create default tool definitions file!");
             e.printStackTrace();

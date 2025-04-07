@@ -28,6 +28,7 @@ public class BlockDefinitionManager {
         File file = new File(plugin.getDataFolder(), "block_definitions.yml");
         if (!file.exists()) {
             createDefaultDefinitions(file);
+            plugin.getLogger().info("Successfully Created Block Definitions");
         }
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         ConfigurationSection definitions = config.getConfigurationSection("definitions");
@@ -48,9 +49,9 @@ public class BlockDefinitionManager {
             
             if (!materials.isEmpty()) {
                 blockDefinitions.put(key.toLowerCase(), materials);
-                plugin.getLogger().info("Successfully Loaded Block Definitions");
             }
         }
+        plugin.getLogger().info("Successfully Loaded Block Definitions");
     }
 
     private void createDefaultDefinitions(File file) {
@@ -133,7 +134,6 @@ public class BlockDefinitionManager {
         }
         try {
             config.save(file);
-            plugin.getLogger().info("Successfully Created Block Definitions");
         } catch (IOException e) {
             plugin.getLogger().severe("Could not create default block definitions file!");
             e.printStackTrace();
