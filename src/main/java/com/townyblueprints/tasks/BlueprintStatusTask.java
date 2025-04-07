@@ -77,9 +77,6 @@ public class BlueprintStatusTask extends BukkitRunnable {
         Map<String, Integer> foundBlocks = new HashMap<>();
         Map<String, Integer> requiredMobs = blueprint.getBlueprint().getRequiredMobs();
         Map<String, Integer> foundMobs = new HashMap<>();
-        Set<String> requiredBiomes = blueprint.getBlueprint().getRequiredBiomes();
-        Set<String> forbiddenBiomes = blueprint.getBlueprint().getForbiddenBiomes();
-        Set<String> foundBiomes = new HashSet<>();
 
         // Initialize counters for block definitions
         for (String key : requiredBlocks.keySet()) {
@@ -95,52 +92,6 @@ public class BlueprintStatusTask extends BukkitRunnable {
         if (plugin.getConfigManager().isDebugMode()) {
             plugin.getLogger().info("[BlueprintStatusTask] Required blocks: " + requiredBlocks);
             plugin.getLogger().info("[BlueprintStatusTask] Required mobs: " + requiredMobs);
-            plugin.getLogger().info("[BlueprintStatusTask] Required biomes: " + requiredBiomes);
-            plugin.getLogger().info("[BlueprintStatusTask] Forbidden biomes: " + forbiddenBiomes);
-        }
-        // Check biomes in the blueprint area
-        boolean hasValidBiomes = true;
-        for (int x = 0; x < blueprint.getBlueprint().getSizeX(); x += 4) {
-            for (int z = 0; z < blueprint.getBlueprint().getSizeZ(); z += 4) {
-                Location checkLoc = loc.clone().add(x, 0, z);
-                String biomeName = checkLoc.getBlock().getBiome().toString();
-                foundBiomes.add(biomeName);
-
-                // Check if this biome is forbidden
-                if (forbiddenBiomes.contains(biomeName)) {
-                    // Debug logging
-                    if (plugin.getConfigManager().isDebugMode()) {
-                        plugin.getLogger().info("[BlueprintStatusTask] Found forbidden biome: " + biomeName);
-                    }
-                    hasValidBiomes = false;
-                    break;
-                }
-            }
-            if (!hasValidBiomes) break;
-        }
-
-        // Check if all required biomes are present
-        if (hasValidBiomes && !requiredBiomes.isEmpty()) {
-            hasValidBiomes = foundBiomes.containsAll(requiredBiomes);
-            // Debug logging
-            if (plugin.getConfigManager().isDebugMode()) {
-                plugin.getLogger().info("[BlueprintStatusTask] Found biomes: " + foundBiomes);
-                plugin.getLogger().info("[BlueprintStatusTask] Has all required biomes: " + hasValidBiomes);
-            }
-        }
-
-        // If biomes are invalid, set blueprint as inactive and return early
-        if (!hasValidBiomes) {
-            if (blueprint.isActive()) {
-                blueprint.setActive(false);
-                plugin.getBlueprintManager().saveAll();
-                plugin.getServer().getOnlinePlayers().forEach(player -> {
-                    if (player.getWorld().equals(world)) {
-                        plugin.getPlacementHandler().updateVisualization(player, blueprint);
-                    }
-                });
-            }
-            return;
         }
 
         // Scan the area for required blocks
@@ -205,6 +156,7 @@ public class BlueprintStatusTask extends BukkitRunnable {
             plugin.getLogger().info("[BlueprintStatusTask] Found blocks: " + foundBlocks);
             plugin.getLogger().info("[BlueprintStatusTask] Found mobs: " + foundMobs);
         }
+
         // Check if all requirements are met
         boolean hasAllRequirements = requiredBlocks.entrySet().stream()
                 .allMatch(entry -> {
@@ -227,7 +179,7 @@ public class BlueprintStatusTask extends BukkitRunnable {
                     boolean matches = found != null && found >= required;
                     // Debug logging
                     if (plugin.getConfigManager().isDebugMode()) {
-                    plugin.getLogger().info("[BlueprintStatusTask] Checking mob " + key + ": required=" + required + ", found=" + found + ", matches=" + matches);
+                        plugin.getLogger().info("[BlueprintStatusTask] Checking mob " + key + ": required=" + required + ", found=" + found + ", matches=" + matches);
                     }
                     return matches;
                 });
@@ -270,7 +222,7 @@ public class BlueprintStatusTask extends BukkitRunnable {
         }
 
         // Check center
-        Location center = loc.clone().add(sizeX/2, 0, sizeZ/2);
+        Location center = loc.clone().add(sizeX / 2, 0, sizeZ / 2);
         return isTownBlock(center, blueprint.getTown());
     }
 
