@@ -296,7 +296,7 @@ public class BlueprintCommand implements CommandExecutor, TabCompleter {
 
             if (refundAmount > 0) {
                 town.getAccount().deposit(refundAmount, "Blueprint upgrade refund");
-                player.sendMessage(String.format("§aYou have been refunded §6%.2f coins§a!", refundAmount));
+                player.sendMessage(String.format("§aYou have been refunded §6%.2f %s§a!", refundAmount, plugin.getConfigManager().getCurrencyName()));
             }
         }
 
@@ -379,7 +379,7 @@ public class BlueprintCommand implements CommandExecutor, TabCompleter {
 
             if (refundAmount > 0) {
                 town.getAccount().deposit(refundAmount, "Blueprint removal refund");
-                player.sendMessage(String.format("§aYou have been refunded §6%.2f coins§a!", refundAmount));
+                player.sendMessage(String.format("§aYou have been refunded §6%.2f %s§a!", refundAmount, plugin.getConfigManager().getCurrencyName()));
             }
         }
 
@@ -481,7 +481,7 @@ public class BlueprintCommand implements CommandExecutor, TabCompleter {
     }
 
     private String formatResourceType(String type) {
-        if (type.equals("MONEY")) return "coins";
+        if (type.equals("MONEY")) return plugin.getConfigManager().getCurrencyName();
         if (type.equals("TOOL")) return "tool durability";
         if (type.startsWith("vanilla:")) {
             return type.substring(8).toLowerCase().replace("_", " ");
