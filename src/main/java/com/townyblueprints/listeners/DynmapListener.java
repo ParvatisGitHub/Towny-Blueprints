@@ -104,9 +104,12 @@ public class DynmapListener implements Listener {
     public void addBlueprintMarker(PlacedBlueprint blueprint) {
         // Get blueprint location
         double x = blueprint.getLocation().getBlockX();
-        double y = blueprint.getLocation().getBlockY(); // Added y coordinate for vertical placement (important for markers)
+        double y = blueprint.getLocation().getBlockY();
         double z = blueprint.getLocation().getBlockZ();
-
+        // Calculate the center of the blueprint
+        double centerX = x + (blueprint.getBlueprint().getSizeX() / 2.0);
+        double centerY = y + (blueprint.getBlueprint().getSizeY() / 2.0); //for vertical placement
+        double centerZ = z + (blueprint.getBlueprint().getSizeZ() / 2.0);
         // Create or update marker
         String markerId = "blueprint_" + blueprint.getId();
         Marker marker = blueprintMarkers.get(markerId);
@@ -114,19 +117,18 @@ public class DynmapListener implements Listener {
         if (marker == null) {
             MarkerIcon icon = markerAPI.getMarkerIcon(plugin.getConfig().getString("dynmap.icons." + blueprint.getBlueprint().getType(), "default"));
 
-            // Correct createMarker method signature with all necessary parameters
             marker = markerSet.createMarker(
                     markerId,
                     blueprint.getBlueprint().getName(),
                     blueprint.getLocation().getWorld().getName(),  // World name
-                    x, y, z,  // Coordinates (x, y, z) for the point marker
+                    centerX, centerY, centerZ,  // Coordinates (x, y, z) for the point marker
                     icon,      // MarkerIcon
                     true       // Is the marker persistent? (true means it won't be removed on reload)
             );
             blueprintMarkers.put(markerId, marker);
         } else {
             // Updating the location correctly with world name and coordinates
-            marker.setLocation(blueprint.getLocation().getWorld().getName(), x, y, z);
+            marker.setLocation(blueprint.getLocation().getWorld().getName(), centerX, centerY, centerZ);
         }
 
         // Set marker description with blueprint information
@@ -145,11 +147,19 @@ public class DynmapListener implements Listener {
 
         marker.setDescription(description);
     }
+    public void updateBlueprintMarker(PlacedBlueprint blueprint) {
+        if (blueprint.isActive()) {
+            addBlueprintMarker(blueprint);  // Add marker if blueprint is active
+        } else {
+            removeBlueprintMarker(blueprint.getId());  // Remove marker if blueprint is disabled
+        }
+    }
 
     public void removeBlueprintMarker(String blueprintId) {
         String markerId = "blueprint_" + blueprintId;
         Marker marker = blueprintMarkers.remove(markerId);
         if (marker != null) {
+            marker.setDescription("<div class=\"blueprint-info\"><h3></h3></div>");
             marker.deleteMarker();
         }
     }

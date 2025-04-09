@@ -286,6 +286,9 @@ public class BlueprintManager {
 
             bonusBlockContributions.remove(id);
             placedBlueprints.remove(id);
+            if (plugin.getConfigManager().isDynmapEnabled()) {
+                plugin.getDynmapListener().removeBlueprintMarker(id);
+            }
             plugin.getDatabase().deleteBlueprint(id);
             plugin.getLogger().info("Blueprint with ID " + id + " has been removed.");
         } else {

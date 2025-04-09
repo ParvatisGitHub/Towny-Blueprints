@@ -189,6 +189,12 @@ public class BlueprintStatusTask extends BukkitRunnable {
             blueprint.setActive(hasAllRequirements);
             plugin.getBlueprintManager().saveAll();
 
+            //update dynmap visualization
+            if (plugin.getConfigManager().isDynmapEnabled()) {
+                if (plugin.getDynmapListener() != null) {
+                    plugin.getDynmapListener().updateBlueprintMarker(blueprint);
+                }
+            }
             // Update visualization for all players viewing this blueprint
             plugin.getServer().getOnlinePlayers().forEach(player -> {
                 if (player.getWorld().equals(world)) {
@@ -196,34 +202,6 @@ public class BlueprintStatusTask extends BukkitRunnable {
                 }
             });
         }
-    }
-
-    private boolean checkTownBoundaries(PlacedBlueprint blueprint) {
-        Location loc = blueprint.getLocation();
-        World world = loc.getWorld();
-        if (world == null) return false;
-
-        // Check corners and center points
-        int sizeX = blueprint.getBlueprint().getSizeX();
-        int sizeZ = blueprint.getBlueprint().getSizeZ();
-
-        // Check corners
-        Location[] corners = {
-                loc,
-                loc.clone().add(sizeX, 0, 0),
-                loc.clone().add(0, 0, sizeZ),
-                loc.clone().add(sizeX, 0, sizeZ)
-        };
-
-        for (Location corner : corners) {
-            if (!isTownBlock(corner, blueprint.getTown())) {
-                return false;
-            }
-        }
-
-        // Check center
-        Location center = loc.clone().add(sizeX / 2, 0, sizeZ / 2);
-        return isTownBlock(center, blueprint.getTown());
     }
 
     private boolean isTownBlock(Location location, Town town) {
