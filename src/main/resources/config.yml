@@ -2,6 +2,14 @@
 
 # Economy settings
 economy:
+  # Currency symbol or name
+  currency_name: "coins"
+
+  # Refund settings for blueprint removal
+  refund:
+    enabled: true
+    percentage: 75
+
   nation_tax:
     # Whether to use Towny's nation tax rate for resource collection
     use_towny_tax: true
@@ -20,11 +28,6 @@ economy:
     cooldown: 60
     # Maximum resources that can accumulate
     max_storage: 1000
-
-  # Refund settings for blueprint removal
-  refund:
-    enabled: true
-    percentage: 75
 
   # Upgrade settings
   upgrades:
@@ -160,6 +163,9 @@ messages:
 
 # Dynmap Integration Settings
 dynmap:
+  # Toggle to enable or disable Dynmap visualization
+  enabled: true
+
   # Icon settings for different blueprint types
   icons:
     government: "tower"
@@ -167,29 +173,6 @@ dynmap:
     mine: "pickaxe"
     lumberyard: "axe"
     default: "default"
-  
-  # Color settings for different blueprint types
-  colors:
-    government:
-      stroke: "#FF0000"
-      fill: "#FF0000"
-      opacity: 0.3
-    farm:
-      stroke: "#00FF00"
-      fill: "#00FF00"
-      opacity: 0.3
-    mine:
-      stroke: "#0000FF"
-      fill: "#0000FF"
-      opacity: 0.3
-    lumberyard:
-      stroke: "#FFFF00"
-      fill: "#FFFF00"
-      opacity: 0.3
-    default:
-      stroke: "#FFFFFF"
-      fill: "#FFFFFF"
-      opacity: 0.3
 
 
 #debug mode toggle enabling console logs for plugin activities

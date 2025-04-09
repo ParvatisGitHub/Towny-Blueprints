@@ -119,26 +119,28 @@ public class TownyBlueprints extends JavaPlugin {
     }
 
     private void setupDynmap() {
-        Plugin dynmap = getServer().getPluginManager().getPlugin("dynmap");
-        if (dynmap != null && dynmap instanceof DynmapCommonAPI) {
-            DynmapCommonAPI dynmapCommonAPI = (DynmapCommonAPI) dynmap;
+        if (this.getConfigManager().isDynmapEnabled()) {
+            Plugin dynmap = getServer().getPluginManager().getPlugin("dynmap");
+            if (dynmap != null && dynmap instanceof DynmapCommonAPI) {
+                DynmapCommonAPI dynmapCommonAPI = (DynmapCommonAPI) dynmap;
 
-            try {
-                // Access the MarkerAPI from the DynmapAPI
-                MarkerAPI markerAPI = dynmapCommonAPI.getMarkerAPI();
-                if (markerAPI != null) {
-                    this.dynmapListener = new DynmapListener(this, markerAPI);
-                    getServer().getPluginManager().registerEvents(this.dynmapListener, this);
-                    getLogger().info("Dynmap integration enabled successfully!");
-                } else {
-                    getLogger().warning("Failed to initialize Dynmap integration - MarkerAPI not available");
+                try {
+                    // Access the MarkerAPI from the DynmapAPI
+                    MarkerAPI markerAPI = dynmapCommonAPI.getMarkerAPI();
+                    if (markerAPI != null) {
+                        this.dynmapListener = new DynmapListener(this, markerAPI);
+                        getServer().getPluginManager().registerEvents(this.dynmapListener, this);
+                        getLogger().info("Dynmap integration enabled successfully!");
+                    } else {
+                        getLogger().warning("Failed to initialize Dynmap integration - MarkerAPI not available");
+                    }
+                } catch (Exception e) {
+                    getLogger().severe("Error initializing Dynmap integration: " + e.getMessage());
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                getLogger().severe("Error initializing Dynmap integration: " + e.getMessage());
-                e.printStackTrace();
+            } else {
+                getLogger().warning("Dynmap plugin not found or is not of the expected type.");
             }
-        } else {
-            getLogger().warning("Dynmap plugin not found or is not of the expected type.");
         }
     }
 

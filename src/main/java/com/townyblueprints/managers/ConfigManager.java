@@ -20,6 +20,7 @@ public class ConfigManager {
     private FileConfiguration blueprintsConfig;
     private final Map<Integer, Integer> maxBlueprintsPerLevel = new HashMap<>();
     private boolean debugMode;
+    private boolean dynmapEnabled;
 
     public void loadConfig() {
         plugin.saveDefaultConfig();
@@ -37,7 +38,8 @@ public class ConfigManager {
                 } catch (NumberFormatException ignored) {}
             }
         }
-        
+        this.dynmapEnabled = config.getBoolean("dynmap.enabled", false);
+
         // Initialize blueprints.yml
         this.blueprintsFile = new File(plugin.getDataFolder(), "blueprints.yml");
         if (!blueprintsFile.exists()) {
@@ -45,6 +47,10 @@ public class ConfigManager {
         }
         this.blueprintsConfig = YamlConfiguration.loadConfiguration(blueprintsFile);
     }
+    public boolean isDynmapEnabled() {
+        return dynmapEnabled;
+    }
+
     public boolean isDebugMode() {
         return debugMode;
     }
