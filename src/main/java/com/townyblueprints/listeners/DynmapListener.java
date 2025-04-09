@@ -63,7 +63,7 @@ public class DynmapListener implements Listener {
             }
 
             if (totalIncome > 0) {
-                description.append("\n<br/>Total Daily Income: ").append(totalIncome).append(" coins");
+                description.append("\n<br/>Total Daily Income: ").append(totalIncome).append(" " + plugin.getConfigManager().getCurrencyName());
             }
 
             event.setDescription(description.toString());

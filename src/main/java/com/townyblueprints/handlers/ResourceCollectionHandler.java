@@ -30,7 +30,7 @@ public class ResourceCollectionHandler implements Listener {
     private final Map<String, Map<String, Integer>> pendingCollections = new HashMap<>();
     @Getter
     private long lastNewDay = System.currentTimeMillis();
-
+    String currencyName = plugin.getConfigManager().getCurrencyName();
     @EventHandler
     public void onNewDay(NewDayEvent event) {
         lastNewDay = System.currentTimeMillis();
@@ -90,7 +90,7 @@ public class ResourceCollectionHandler implements Listener {
 
                     if (resourceType.equals("MONEY")) {
                         town.getAccount().deposit(amount, "Blueprint income");
-                        player.sendMessage(String.format("§aCollected §6%d coins§a from %s!",
+                        player.sendMessage(String.format("§aCollected §6%d" + currencyName + "§a from %s!",
                                 amount, blueprint.getBlueprint().getName()));
                     } else {
                         ItemStack item = ItemUtil.getItemStack(resourceType, amount, player);
@@ -159,7 +159,7 @@ public class ResourceCollectionHandler implements Listener {
 
                 if (resourceType.equals("MONEY")) {
                     town.getAccount().deposit(amount, "Blueprint income");
-                    player.sendMessage(String.format("§aCollected §6%d coins§a from %s!",
+                    player.sendMessage(String.format("§aCollected §6%d" + currencyName + "§a from %s!",
                             amount, blueprint.getBlueprint().getName()));
                     collected = true;
                 } else {

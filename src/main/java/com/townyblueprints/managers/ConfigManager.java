@@ -21,11 +21,13 @@ public class ConfigManager {
     private final Map<Integer, Integer> maxBlueprintsPerLevel = new HashMap<>();
     private boolean debugMode;
     private boolean dynmapEnabled;
+    private String currencyName;
 
     public void loadConfig() {
         plugin.saveDefaultConfig();
         this.config = plugin.getConfig();
         this.debugMode = config.getBoolean("debug.debugMode", false);
+        currencyName = config.getString("economy.currency_name", "coins");
 
         // Load max blueprints per level
         maxBlueprintsPerLevel.clear();
@@ -47,6 +49,10 @@ public class ConfigManager {
         }
         this.blueprintsConfig = YamlConfiguration.loadConfiguration(blueprintsFile);
     }
+    public String getCurrencyName() {
+        return currencyName;
+    }
+
     public boolean isDynmapEnabled() {
         return dynmapEnabled;
     }

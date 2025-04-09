@@ -429,7 +429,7 @@ public class ChatInputListener implements Listener {
                 session.getBlueprint().setUpkeepType(type);
                 player.sendMessage(String.format("§aDaily upkeep set to: §f%s %s", amount, type));
                 session.setCurrentField(InputState.COST);
-                player.sendMessage("§eEnter placement cost (in coins), or type 'done' to finish:");
+                player.sendMessage("§eEnter placement cost (in" + plugin.getConfigManager().getCurrencyName() + "), or type 'done' to finish:");
             } catch (NumberFormatException e) {
                 player.sendMessage("§cInvalid amount format!");
             }

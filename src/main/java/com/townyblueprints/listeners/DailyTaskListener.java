@@ -147,7 +147,7 @@ public class DailyTaskListener implements Listener {
 
         // Handle money upkeep
         if (totalUpkeep.containsKey("MONEY")) {
-            upkeepParts.add(String.format("§6%d coins", totalUpkeep.get("MONEY")));
+            upkeepParts.add(String.format("§6%d " + plugin.getConfigManager().getCurrencyName() +, totalUpkeep.get("MONEY")));
             totalUpkeep.remove("MONEY");
         }
 
@@ -177,7 +177,7 @@ public class DailyTaskListener implements Listener {
     }
 
     private String formatResourceType(String type) {
-        if (type.equals("MONEY")) return "coins";
+        if (type.equals("MONEY")) return plugin.getConfigManager().getCurrencyName();
         if (type.equals("TOOL")) return "tool durability";
         if (type.startsWith("vanilla:")) {
             return type.substring(8).toLowerCase().replace("_", " ");

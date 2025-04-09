@@ -105,7 +105,7 @@ public class TownStatusListener implements Listener {
     }
 
     private String formatResourceType(String type) {
-        if (type.equals("MONEY")) return "coins";
+        if (type.equals("MONEY")) return plugin.getConfigManager().getCurrencyName();
         if (type.equals("TOOL")) return "tool durability";
         if (type.startsWith("vanilla:")) {
             return type.substring(8).toLowerCase().replace("_", " ");
