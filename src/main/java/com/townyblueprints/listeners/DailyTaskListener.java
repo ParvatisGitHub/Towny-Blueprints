@@ -147,7 +147,7 @@ public class DailyTaskListener implements Listener {
 
         // Handle money upkeep
         if (totalUpkeep.containsKey("MONEY")) {
-            upkeepParts.add(String.format("§6%d " + plugin.getConfigManager().getCurrencyName() +, totalUpkeep.get("MONEY")));
+            upkeepParts.add(String.format("§6%d " + plugin.getConfigManager().getCurrencyName() + "", totalUpkeep.get("MONEY")));
             totalUpkeep.remove("MONEY");
         }
 
