@@ -113,6 +113,34 @@ blueprints:
       shared_upkeep: false
       upkeep_multiplier: 1.0
 
+# Build Load Settings
+build_load:
+  # Toggle if using the load system or not
+  build_loadEnabled: true
+  # Base build load limit for towns
+  base_limit: 100
+
+  # Additional build load per town level
+  town_level:
+    1: 100  # Level 1 towns can support 100 build load
+    2: 150  # Level 2 towns can support 150 build load
+    3: 200
+    4: 250
+    5: 300
+    6: 350
+    7: 400
+    8: 450
+    9: 500
+    10: 550
+
+  # Default build loads for different blueprint types
+  defaults:
+    mine: 25
+    farm: 10
+    lumberyard: 15
+    factory: 30
+    house: 5
+    shop: 8
 # Maximum number of blueprints allowed per town level
 # Use -1 for unlimited
 max_blueprints_per_level:
