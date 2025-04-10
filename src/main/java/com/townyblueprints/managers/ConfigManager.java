@@ -20,6 +20,7 @@ public class ConfigManager {
     private FileConfiguration blueprintsConfig;
     private final Map<Integer, Integer> maxBlueprintsPerLevel = new HashMap<>();
     private boolean debugMode;
+    private boolean build_loadEnabled;
     private boolean dynmapEnabled;
     private String currencyName;
 
@@ -28,6 +29,7 @@ public class ConfigManager {
         this.config = plugin.getConfig();
         this.debugMode = config.getBoolean("debug.debugMode", false);
         currencyName = config.getString("economy.currency_name", "coins");
+        this.build_loadEnabled  = config.getBoolean("build_load.build_loadEnabled", true);
 
         // Load max blueprints per level
         maxBlueprintsPerLevel.clear();
@@ -60,7 +62,9 @@ public class ConfigManager {
     public boolean isDebugMode() {
         return debugMode;
     }
-
+    public boolean isBuild_loadEnabled() {
+        return build_loadEnabled;
+    }
     public void saveBlueprints() {
         try {
             blueprintsConfig.save(blueprintsFile);
