@@ -20,12 +20,14 @@ repositories {
     maven { url 'https://mvn.lumine.io/repository/maven-public/' }
     maven { url 'https://nexus.phoenixdevt.fr/repository/maven-public/' }
 	maven { url = "https://repo.mikeprimm.com/" }
+    maven { url = "https://maven.enginehub.org/repo/" }
 }
 
 dependencies {
     compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
     compileOnly 'com.palmergames.bukkit.towny:towny:0.101.1.0'
-	    compileOnly 'com.github.TownyAdvanced:Dynmap-Towny:1.2.0'
+	compileOnly 'com.github.TownyAdvanced:Dynmap-Towny:1.2.0'
+    compileOnly 'com.sk89q.worldedit:worldedit-core:7.3.10'
     
     // Add lombok
     compileOnly 'org.projectlombok:lombok:1.18.30'
