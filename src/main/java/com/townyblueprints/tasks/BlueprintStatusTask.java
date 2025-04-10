@@ -150,7 +150,19 @@ public class BlueprintStatusTask extends BukkitRunnable {
                 }
             }
         }
+        boolean schematicMatched = true;
 
+        Set<String> requiredSchematics = blueprint.getBlueprint().getRequiredSchematic();
+        if (requiredSchematics != null && !requiredSchematics.isEmpty()) {
+            schematicMatched = requiredSchematics.stream().anyMatch(schematicName ->
+                    plugin.getSchematicUtil().matchesSchematic(schematicName, blueprint.getLocation())
+            );
+
+            if (!schematicMatched && plugin.getConfigManager().isDebugMode()) {
+                plugin.getLogger().info("[BlueprintStatusTask] No required schematic matched for: " + requiredSchematics);
+                plugin.getLogger().info("[BlueprintStatusTask] Blueprint at " + blueprint.getLocation() + " failed schematic requirement.");
+            }
+        }
         // Debug logging
         if (plugin.getConfigManager().isDebugMode()) {
             plugin.getLogger().info("[BlueprintStatusTask] Found blocks: " + foundBlocks);
@@ -158,7 +170,8 @@ public class BlueprintStatusTask extends BukkitRunnable {
         }
 
         // Check if all requirements are met
-        boolean hasAllRequirements = requiredBlocks.entrySet().stream()
+        boolean hasAllRequirements = schematicMatched &&
+                requiredBlocks.entrySet().stream()
                 .allMatch(entry -> {
                     String key = entry.getKey();
                     Integer required = entry.getValue();
