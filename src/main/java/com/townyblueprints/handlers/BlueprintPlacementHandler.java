@@ -44,17 +44,20 @@ public class BlueprintPlacementHandler {
             player.sendMessage("§cYou must be in a town to place blueprints!");
             return;
         }
-
+        if (plugin.getConfigManager().isBuild_loadEnabled()) {
+            // Check if placing this blueprint will exceed the town's load
+            int additionalLoad = blueprint.getBuildLoad();
+            if (!plugin.getTownBuildLoadManager().canTownSupportBuildLoad(town, additionalLoad)) {
+                player.sendMessage("§cYour town cannot support the load of this blueprint.");
+                return;
+            }
+        }
         // Check biome validity (both required and forbidden biomes)
         Location location = player.getLocation();
         if (!isValidBiome(location, blueprint)) {
             player.sendMessage("§cYou cannot place this blueprint in the current biome.");
             return;
         }
-
-        // Other checks: town level, limits, etc.
-        // (Code from your existing `startPlacement` method here)
-
         cancelPlacement(player);
 
         playerPlacements.put(player.getUniqueId(), blueprint);
@@ -88,20 +91,35 @@ public class BlueprintPlacementHandler {
     }
 
     private boolean checkTypeLimits(Town town, Blueprint blueprint) {
+        // Get the current town level and load limits
         int townLevel = plugin.getConfigManager().getTownLevel(town);
         String type = blueprint.getType();
 
         // Get the type limit for this town level
         int typeLimit = plugin.getConfigManager().getTypeLimitForLevel(type, townLevel);
-        if (typeLimit == -1) return true; // No limit
+        if (typeLimit == -1) return true; // No type limit
 
         // Count existing blueprints of this type
         long count = plugin.getBlueprintManager().getPlacedBlueprintsForTown(town).stream()
                 .filter(bp -> bp.getBlueprint().getType().equals(type))
                 .count();
 
-        return count < typeLimit;
+        if (count >= typeLimit) {
+            return false;
+        }
+        if (plugin.getConfigManager().isBuild_loadEnabled()) {
+            // Now check the overall load limit
+            int currentLoad = plugin.getTownBuildLoadManager().getTownBuildLoad(town);
+            int loadLimit = plugin.getTownBuildLoadManager().getTownBuildLoadLimit(town);
+            int blueprintLoad = blueprint.getBuildLoad();
+
+            if ((currentLoad + blueprintLoad) > loadLimit) {
+                return false;
+            }
+        }
+        return true;
     }
+
 
     public void togglePlacementMode(Player player) {
         UUID playerId = player.getUniqueId();
@@ -284,13 +302,18 @@ public class BlueprintPlacementHandler {
             return false;
         }
 
+        // Check the type and load limits before placing the blueprint
+        if (!checkTypeLimits(town, blueprint)) {
+            player.sendMessage("§cThis blueprint exceeds the load or type limit for your town.");
+            return false;
+        }
+
         try {
             if (!TownyAPI.getInstance().getResident(player).hasTown() ||
                     !TownyAPI.getInstance().getResident(player).getTown().equals(town)) {
                 player.sendMessage("§cYou don't have permission to place blueprints in this town!");
                 return false;
             }
-
 
             PlacedBlueprint placedBlueprint = new PlacedBlueprint(
                     UUID.randomUUID().toString(),
@@ -301,6 +324,8 @@ public class BlueprintPlacementHandler {
             );
 
             String id = plugin.getBlueprintManager().createPlacedBlueprint(placedBlueprint);
+            plugin.getTownBuildLoadManager().recalculateTownBuildLoad(town);
+
             cancelPlacement(player);
 
             player.sendMessage("§aBlueprint placed successfully!");
@@ -310,6 +335,7 @@ public class BlueprintPlacementHandler {
             return false;
         }
     }
+
 
     private boolean checkTownBoundaries(Location location, Blueprint blueprint, Town town) {
 
