@@ -278,12 +278,13 @@ public class BlueprintManager {
     public void removePlacedBlueprint(String id) {
         PlacedBlueprint blueprint = placedBlueprints.get(id);
         if (blueprint != null) {
-            if (blueprint.isActive() && bonusBlockContributions.getOrDefault(id, false)) {
-                Town town = blueprint.getTown();
-                int currentBonus = town.getBonusBlocks();
-                updateTownBonusBlocks(town, currentBonus);
+            Town town = blueprint.getTown();
+            if (town != null) {
+                if (blueprint.isActive() && bonusBlockContributions.getOrDefault(id, false)) {
+                    int currentBonus = town.getBonusBlocks();
+                    updateTownBonusBlocks(town, currentBonus);
+                }
             }
-
             bonusBlockContributions.remove(id);
             placedBlueprints.remove(id);
             if (plugin.getConfigManager().isDynmapEnabled()) {
@@ -291,6 +292,9 @@ public class BlueprintManager {
             }
             plugin.getDatabase().deleteBlueprint(id);
             plugin.getLogger().info("Blueprint with ID " + id + " has been removed.");
+            if (plugin.getConfigManager().isBuild_loadEnabled()) {
+                plugin.getTownBuildLoadManager().recalculateTownBuildLoad(town);
+            }
         } else {
             plugin.getLogger().warning("No placed blueprint found with ID " + id);
         }
